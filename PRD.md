@@ -2,7 +2,7 @@
 
 > Living document. Update it whenever requirements, rules, or decisions change, and add a line to the Changelog at the bottom.
 
-**Owner:** Jane · **Status:** Draft v0.9 · **Last updated:** 2026-11-24
+**Owner:** Jane · **Status:** Draft v0.20 · **Last updated:** 2026-11-24
 
 ---
 
@@ -56,6 +56,54 @@ Each has a definition shown in a tooltip. An ⓘ icon follows the department nam
 
 General Studies is the required foundation, not a major option. It intentionally has no tooltip.
 
+### Events
+
+Each Event is a seasonal space holding 4 prompts. Its season and definition show in a tooltip (ⓘ on the season chip in the location modal, and on the board pin tooltip).
+
+| Event | Season | Definition |
+|---|---|---|
+| **Polar Plunge** | Winter | Start the year by jumping into the cold. We are going into deep hibernation, snowed in, cabins, and warmth. |
+| **Picnic Games** | Spring | Bring your blankets and let's set up on the lawn. Spring is for fake dating, gardens, and romcoms. |
+| **Summer Regatta** | Summer | Two teams on the water and a storm rolling in. Summer is for beaches, bodyguards and books that keep you up past midnight. |
+| **Rivalry Week** | Fall | The last match of the year. Rivals, masks, a bonfire and the holidays coming in fast. Bring your mud boots. |
+
+Events are extra credit only.
+
+- **Seasons:** Winter = January to March, Spring = April to June, Summer = July to September, Fall = October to December. The app uses the current month on your device.
+- **Season lock:** off season, a book can't be started (Reading, Complete and DNF are disabled while its status is "To read"). Title, author, cover, rating and notes can still be added. A book already started in season can still be finished or marked DNF after the season ends.
+- **Access:** Events are reached by clicking them. The dice don't land on them.
+
+### Clubs
+
+Each Club is a space holding 4 prompts, extra credit only, reached by clicking (not by dice). Its definition shows in a tooltip (ⓘ on the Club chip in the location modal, and on the board pin tooltip).
+
+| Club | Definition |
+|---|---|
+| **Grave Diggers** | For readers who like their love interests dangerous and their books with a content warning page a mile long. Read at your own comfort level and swap freely. |
+| **Stargazers** | Space operas, cyborgs, the end of the world, and people who got pulled off Earth and fell in love on the way. |
+| **Tea Society** | Low stakes, warm drinks, and a main character who is probably knitting something. For the weeks when you want a book to be your comfort place. |
+| **Zine Club** | Indie romance, the way it actually gets found: the character art that stopped your scroll, the small press you love, the book written by two friends. |
+
+**Rule:** finish all 4 prompts in a club to become that club's **Club President** 👑. It is a badge only and unlocks nothing. The app shows a Club President chip in the modal, a gold ring and label on the pin, and a "Club Presidents x/4" line in the progress card.
+
+### Study Sessions
+
+- 12 monthly sessions (January to December). Each has a prompt and an **assigned book**, defined in `data.js`.
+- Extra credit only. They're not on the board or the dice, and sit in a grid below the map.
+- Opening a session offers a "Use assigned book" button that fills in the title and author. The player can also read a different book.
+- Not season-locked: any session can be started at any time. (Assumption from the existing app; say so if sessions should open only in their month.)
+
+### Night School 🌙
+
+> "Missing a dark romance department? After hours, any department can go dark. Pick any department except General Studies and swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If you choose this as your major, use the name of the map area as your team."
+
+- Night School is a **mode**, not a separate set of locations. It has 8 prompts (5 Core, 3 Honors), matching the 8 locations in a department.
+- **Any number** of departments (not General Studies) can go dark, each using the same 8 Night School prompts.
+- Prompts swap in order: a department's Nth Core location gets Night School Core N, and the same for Honors.
+- A dark department keeps its locations, its Core and Honors tiers, and its place in the degree (major, minor or elective). Books already logged stay with their location.
+- It can be turned on or off at any time under Night School in the Degree card. Dark locations show a 🌙 Night School chip.
+- If a dark department is the major, the Degree card shows the department name as the player's team.
+
 ### Terminology
 
 - **Location** replaces "building" in all user-facing text, and eventually in code. (The code and `data.js` still say "building" for now.)
@@ -69,7 +117,7 @@ General Studies is the required foundation, not a major option. It intentionally
 | Locations | Reading prompts, defined in `data.js` (generated from `Romance Reading Prompts.numbers`) |
 | Departments | General Studies plus the five above |
 | Tiers | **Core** (counts toward graduation) and **Honors** (extra credit, gold-ringed pins) |
-| Other spaces | Clubs and Events (4 prompts each), Study Sessions (12 monthly assigned reads) and Night School (8 reads). Their role under the degree rules is still open. |
+| Other spaces | Clubs and Events (4 prompts each), Study Sessions (12 monthly assigned reads, below the map, extra credit). Night School is a prompt-swap mode (see below), not a separate set of locations. |
 
 ### Dice and movement rules (implemented)
 
@@ -93,7 +141,8 @@ General Studies is the required foundation, not a major option. It intentionally
 - **Building modal:** prompt, status selector, title, author, start and end dates, half-star rating, notes, and cover image (upload or paste, resized to 320 px JPEG). Tabs for group spaces. "Use assigned book" for Study Sessions and Night School. "Place my token here" and "Clear this building".
 - **Progress:** header summary, Core progress bar, per-region bars with badges, journey log (last 12 shown, 60 kept).
 - **Persistence:** `localStorage` under key `romanceopoly-2027-v2`.
-- **Backup:** JSON export and import, plus full reset.
+- **Undo:** an "↶ Undo" button in the header reverses the last roll or status change (one step only, and it resets on page reload).
+- **Backup:** JSON export and import, plus full reset. After every 3 completed books since the last export, a reminder toast offers "Export now".
 - **Rules modal** with the two rule toggles (text predates the degree rules).
 - **Department tooltips:** an ⓘ icon after the department name in the sidebar progress list and the location modal chip. The definition shows on hover over the icon only.
 - **Degree tracker:** Degree card with Major and Minor dropdowns (any time, changeable), progress rows for General Studies, Major, Minor and Electives, and a 20-book total. Graduation and honors banners.
@@ -114,16 +163,15 @@ General Studies is the required foundation, not a major option. It intentionally
 
 **Degree rules (not yet built)**
 
-- [ ] Clubs, Events, Study Sessions and Night School: details to come from Jane.
 - [ ] Rename "building" to "location" in the code (UI text and the Rules modal are done).
 
 **Other**
 
 - [ ] Final prompts and assigned books in `data.js` (Study Sessions and Night School). Confirm they're complete.
 - [ ] Is a mobile or tablet layout good enough? It hasn't been tested.
-- [ ] Cover images are stored as base64 in `localStorage`, which could hit the storage limit with many books. Export is the only backup.
-- [ ] No undo for an accidental roll or status change.
-- [ ] Decide whether the app will be hosted anywhere, or only run locally.
+- [ ] Hosting on **GitHub Pages** (chosen). Repo: `Janexiao-cmd/reading_challenge_gameboard` (public). Everything now lives in the repo root, so Pages can serve branch `main`, folder `/ (root)`. Still to do: commit, push and switch on Pages in the repo settings. Prompts, board art, `PRD.md` and the `.numbers` file will all be public (approved).
+- [ ] Phone and tablet layout needs checking, since friends will use it on phones.
+- [ ] Cover images and the `.numbers` source file shouldn't be published. Confirm what goes online, and check board art and prompt text are OK to share.
 
 ## 7. Technical notes
 
@@ -135,7 +183,7 @@ General Studies is the required foundation, not a major option. It intentionally
   - `Romance Reading Prompts.numbers`: source spreadsheet for `data.js`
   - `package.json`: `dev` script only (`npx serve . -l 8000`)
 - **Fonts:** Google Fonts (Fraunces, Nunito), so first load needs a network connection.
-- **Run:** `cd romanceopoly-2027 && npm run dev`, then open http://localhost:8000. Node.js is required, and `npm` must be run from this folder.
+- **Run:** `npm run dev` from the repo root, then open http://localhost:8000. Node.js is required, and `npm` must be run from the folder holding `package.json` (the repo root).
 - **Pin positions** are hard-coded in the `RAW` array in `index.html`, as pixel coordinates on the 2000×1336 board image.
 - **Regenerating data:** `data.js` is generated from the Numbers file. Edit the spreadsheet or `data.js`, and keep both in sync.
 
@@ -152,6 +200,14 @@ General Studies is the required foundation, not a major option. It intentionally
 | 2026-11-24 | Major and minor can be changed any time | Jane's rule |
 | 2026-11-24 | General Studies gets no tooltip | Jane's choice |
 | 2026-11-24 | Honors die can reach General Studies Honors; they don't count toward honors graduation | Jane's rule |
+| 2026-11-24 | Club President is a badge only | Jane's rule |
+| 2026-11-24 | Night School is a prompt-swap mode; any number of departments, changeable any time | Jane's rule |
+| 2026-11-24 | App will be shared with friends (hosted online, each player's data in their own browser) | Jane's choice |
+| 2026-11-24 | Backups stay Export/Import, with a reminder every 3 completed books | Jane's choice; no accounts or backend |
+| 2026-11-24 | Undo covers the last action only | Jane's choice; simple and covers most mistakes |
+| 2026-11-24 | Project files live in the repo root (no `romanceopoly-2027/` subfolder) | Lets GitHub Pages serve the repo directly |
+| 2026-11-24 | Prompts, board art and the repo contents may be public | Jane approved |
+| 2026-11-24 | Host on GitHub Pages | Free, and the repo is already on GitHub |
 | 2026-11-24 | One book counts toward one requirement (for now) | Simplest rule; revisit later |
 | 2026-11-24 | Honors = honors graduation; Clubs, Events, Study Sessions, Night School = extra credit | Jane's rules |
 | 2026-11-24 | Track requirements in `PRD.md` in the repo | Keeps context next to the code and in git history |
@@ -167,3 +223,14 @@ General Studies is the required foundation, not a major option. It intentionally
 - **2026-11-24:** General Studies stays without a tooltip (v0.7).
 - **2026-11-24:** Built the degree tracker, major/minor declaration, dice hard limit, banners and new Rules text (v0.8).
 - **2026-11-24:** Honors die now reaches General Studies Honors locations (v0.9).
+- **2026-11-24:** Added the four Events with seasons and definitions, shown as tooltips (v0.10).
+- **2026-11-24:** Event season lock and click-only access (v0.11).
+- **2026-11-24:** Added Clubs with definitions and the Club President rule (v0.12).
+- **2026-11-24:** Club President confirmed as a badge only (v0.13).
+- **2026-11-24:** Night School redefined as a department prompt-swap mode and built (v0.14). The separate Night School grid was removed.
+- **2026-11-24:** Documented Study Sessions from the existing data and app behavior (v0.15).
+- **2026-11-24:** Decided to share the app with friends, so hosting and phone layout are needed (v0.16).
+- **2026-11-24:** Backup approach decided: keep Export/Import and add an export reminder (v0.17).
+- **2026-11-24:** Added one-step Undo for rolls and status changes (v0.18).
+- **2026-11-24:** Chose GitHub Pages for hosting (v0.19).
+- **2026-11-24:** Moved all files to the repo root and approved public sharing (v0.20).

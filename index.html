@@ -46,6 +46,7 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;padding:16p
 .pin.complete.hascover .dot::after{content:""}
 .pin.honors .dot{border-color:var(--gold);box-shadow:0 0 0 2px rgba(224,165,40,.55),0 1px 4px rgba(0,0,0,.25)}
 .pin.honors.complete .dot{border-color:var(--gold)}
+.pin.president .dot{border-color:var(--gold);box-shadow:0 0 0 2px rgba(224,165,40,.55),0 1px 4px rgba(0,0,0,.25)}
 .pin.dnf .dot{background:var(--gray);border-color:#fff;color:#fff}
 .pin.start .dot{width:70%;height:70%;background:var(--rose);border-color:#fff;color:#fff}
 .pin .tip{position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:12px;line-height:1.3;padding:5px 9px;border-radius:8px;width:max-content;max-width:240px;text-align:left;opacity:0;pointer-events:none;transition:.12s;z-index:9}
@@ -75,7 +76,7 @@ aside{display:flex;flex-direction:column;gap:14px}
 .log li{padding:3px 0;border-bottom:1px dashed var(--line)}
 .banner{display:none;background:linear-gradient(90deg,var(--rose),var(--gold));color:#fff;text-align:center;padding:10px;font-family:Fraunces,serif;font-size:18px}
 .banner.show{display:block}
-.extras{display:grid;grid-template-columns:3fr 2fr;gap:16px;padding:0 20px 28px}
+.extras{display:grid;grid-template-columns:1fr;gap:16px;padding:0 20px 28px}
 @media(max-width:1000px){.extras{grid-template-columns:1fr;padding:0 16px 24px}}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .cell{text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-height:58px}
@@ -135,6 +136,10 @@ textarea{resize:vertical;min-height:60px}
 .tipd:hover,.tipd:focus{opacity:1;outline:0}
 .tipd.r[data-tip]:hover::after,.tipd.r[data-tip]:focus::after{left:auto;right:-8px}
 .tipd[data-tip]:hover::after,.tipd[data-tip]:focus::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:0;z-index:60;width:max-content;max-width:260px;background:var(--ink);color:#fff;font:400 12px/1.4 Nunito,sans-serif;padding:8px 10px;border-radius:8px;white-space:normal;text-transform:none;letter-spacing:0;box-shadow:var(--shadow)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;box-shadow:var(--shadow);z-index:80;display:none;gap:12px;align-items:center;max-width:92vw}
+.toast.show{display:flex}
+.toast button{border:0;background:#fff;color:var(--ink);border-radius:99px;padding:4px 12px;font-weight:700}
+.toast .x{background:transparent;color:#fff;font-size:20px;padding:0 4px}
 </style>
 </head>
 <body>
@@ -142,6 +147,7 @@ textarea{resize:vertical;min-height:60px}
   <h1>Romanceopoly 2027</h1>
   <span id="headprog" class="small"></span>
   <span class="sp"></span>
+  <button class="btn" id="btnUndo" title="Undo the last roll or status change">↶ Undo</button>
   <button class="btn" id="btnRules">Rules</button>
   <button class="btn" id="btnExport">Export</button>
   <button class="btn" id="btnImport">Import</button>
@@ -181,6 +187,8 @@ textarea{resize:vertical;min-height:60px}
       <h3>Degree <small>20 books to graduate</small></h3>
       <div class="row2"><div><label class="f" style="margin-top:0">Major</label><select id="selMajor"></select></div><div><label class="f" style="margin-top:0">Minor</label><select id="selMinor"></select></div></div>
       <div id="degrows" style="margin-top:6px"></div>
+      <label class="f">🌙 Night School <small style="text-transform:none;letter-spacing:0">— swap a department's prompts for dark romance</small></label>
+      <div id="darkopts" class="small"></div>
     </div>
     <div class="card">
       <h3>Progress</h3>
@@ -196,7 +204,6 @@ textarea{resize:vertical;min-height:60px}
 </main>
 <section class="extras">
   <div class="card"><h3>Bonus: Study Sessions <small>one assigned read per month · not on the board</small></h3><div class="grid" id="gridSessions"></div></div>
-  <div class="card"><h3>Bonus: Night School <small>not on the board</small></h3><div class="grid" id="gridNight"></div></div>
 </section>
 
 <!-- Building modal -->
@@ -208,6 +215,7 @@ textarea{resize:vertical;min-height:60px}
   <div class="mbody">
     <div class="tabs" id="tabs"></div>
     <div class="prompt" id="mprompt"></div>
+    <div class="assigned" id="mseason" style="display:none;background:#eef6fb;border-color:#4fb0d3"></div>
     <div class="assigned" id="massigned"></div>
     <div class="cols">
       <div>
@@ -244,6 +252,8 @@ textarea{resize:vertical;min-height:60px}
   <div class="mbody" id="m2body"></div>
 </div></div>
 
+<div class="toast" id="toast"><span>💾 You've finished a few books since your last backup.</span><button id="toastExport">Export now</button><button class="x" id="toastX" aria-label="Dismiss">×</button></div>
+
 <script src="data.js"></script>
 <script>
 const IMG_W=2000, IMG_H=1336;
@@ -256,11 +266,27 @@ const REGIONS={
   current:{label:'Current Affairs',color:'#e8884f',def:'Contemporary romance set in the real world, group chats and small-town gossip included. Enroll here for the boy next door and the bad boy that will ruin your sleep.'},
   clubs:{label:'Clubs',color:'#6f86b8'},
   events:{label:'Events',color:'#4fb0d3'},
-  sessions:{label:'Study Sessions',color:'#c1704f'},
-  night:{label:'Night School',color:'#4a3b5e'}
+  sessions:{label:'Study Sessions',color:'#c1704f'}
 };
 const ACADEMIC={'General Studies':'general','Ruinous Arts':'ruinous','Special Collections':'special','Unnatural Sciences':'unnatural','Applied Mythology':'applied','Current Affairs':'current'};
 const GROUPREG={'Grave Diggers':'clubs','Stargazers':'clubs','Tea Society':'clubs','Zine Club':'clubs','Polar Plunge':'events','Picnic Games':'events','Summer Regatta':'events','Rivalry Week':'events','Study Sessions':'sessions','Night School':'night'};
+const EVENTS={
+  'Polar Plunge':{months:[0,2],range:'January–March',season:'Winter',icon:'❄️',def:"Start the year by jumping into the cold. We are going into deep hibernation, snowed in, cabins, and warmth."},
+  'Picnic Games':{months:[3,5],range:'April–June',season:'Spring',icon:'🌷',def:"Bring your blankets and let's set up on the lawn. Spring is for fake dating, gardens, and romcoms."},
+  'Summer Regatta':{months:[6,8],range:'July–September',season:'Summer',icon:'☀️',def:"Two teams on the water and a storm rolling in. Summer is for beaches, bodyguards and books that keep you up past midnight."},
+  'Rivalry Week':{months:[9,11],range:'October–December',season:'Fall',icon:'🍂',def:"The last match of the year. Rivals, masks, a bonfire and the holidays coming in fast. Bring your mud boots."}
+};
+const CLUBS={
+  'Grave Diggers':{icon:'⚰️',def:"For readers who like their love interests dangerous and their books with a content warning page a mile long. Read at your own comfort level and swap freely."},
+  'Stargazers':{icon:'🔭',def:"Space operas, cyborgs, the end of the world, and people who got pulled off Earth and fell in love on the way."},
+  'Tea Society':{icon:'🍵',def:"Low stakes, warm drinks, and a main character who is probably knitting something. For the weeks when you want a book to be your comfort place."},
+  'Zine Club':{icon:'📰',def:"Indie romance, the way it actually gets found: the character art that stopped your scroll, the small press you love, the book written by two friends."}
+};
+// Finish all 4 prompts in a club to become its Club President.
+const isPresident=name=>{const c=BLD.filter(b=>b.where===name);return !!CLUBS[name]&&c.length>0&&c.every(b=>status(b.id)==='complete')};
+const inSeason=ev=>{const m=new Date().getMonth();return m>=ev.months[0]&&m<=ev.months[1]};
+// An Event's book can't be started off season (status stays "To read"), but its info can still be filled in.
+const locked=id=>{const ev=EVENTS[B[id].where];return !!ev&&!inSeason(ev)&&status(id)==='todo'};
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 
 /* Buildings come from data.js (your table). */
@@ -291,7 +317,7 @@ const missing=BLD.filter(b=>!LOCS.some(l=>l.bids.includes(b.id))&&!['sessions','
 if(missing.length)console.warn('Locations not on the map:',missing.map(b=>b.name));
 
 const KEY='romanceopoly-2027-v2';
-const DEFAULT={major:null,minor:null,pos:0,laps:0,awaiting:null,entries:{},log:[],rules:{dice:1,skipDone:true,mustFinish:true},showPath:false};
+const DEFAULT={sinceExport:0,dark:{},major:null,minor:null,pos:0,laps:0,awaiting:null,entries:{},log:[],rules:{dice:1,skipDone:true,mustFinish:true},showPath:false};
 let S=load();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r)return{...DEFAULT,...r,rules:{...DEFAULT.rules,...(r.rules||{})}};}catch(e){}return structuredClone(DEFAULT)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('Could not save — browser storage may be full. Use Export to back up your data.')}}
@@ -309,6 +335,15 @@ function locStatus(L){
   if(st.includes('reading'))return 'reading';
   if(st.includes('complete'))return 'partial';
   return 'todo';
+}
+
+/* ---------- Night School ---------- */
+// Any academic department except General Studies can "go dark": its prompts are swapped for the Night School ones (by Core/Honors order).
+const NS={Core:BLD.filter(b=>b.where==='Night School'&&b.name.includes('Core')),Honors:BLD.filter(b=>b.where==='Night School'&&b.name.includes('Honors'))};
+const isDark=r=>!!(S.dark&&S.dark[r]);
+function promptOf(b){
+  if(isDark(b.region)&&NS[b.type]){const n=NS[b.type][BLD.filter(x=>x.region===b.region&&x.type===b.type).indexOf(b)];if(n)return n.prompt}
+  return b.prompt;
 }
 
 /* ---------- degree ---------- */
@@ -367,13 +402,13 @@ function render(){
     const p=$('pin-'+L.id),st=locStatus(L),dot=p.firstChild;
     const e=L.kind==='single'?S.entries[L.bids[0]]:null,cover=st==='complete'&&e&&e.cover;
     const honors=L.kind==='single'&&B[L.bids[0]].type==='Honors';
-    p.className='pin '+st+(L.kind==='group'?' group':'')+(cover?' hascover':'')+(honors?' honors':'');
+    p.className='pin '+st+(L.kind==='group'?' group':'')+(cover?' hascover':'')+(honors?' honors':'')+(isPresident(L.name)?' president':'');
     dot.style.backgroundImage=cover?`url(${e.cover})`:'';
     const done=L.bids.filter(b=>status(b)==='complete').length;
     dot.dataset.l=L.kind==='start'?'★':st==='complete'?'✓':L.kind==='group'?(done?done+'/'+L.bids.length:L.bids.length):'';
     let tip=esc(L.name);
-    if(L.kind==='single'){tip='<b>'+esc(B[L.bids[0]].name)+'</b>'+(honors?' <span style="color:#f3cf72">★ Honors (extra credit)</span>':'')+'<br>'+esc(B[L.bids[0]].prompt)+(e&&e.title?'<br>📖 '+esc(e.title):'')}
-    else if(L.kind==='group')tip=`<b>${esc(L.name)}</b> — ${done}/${L.bids.length} complete`;
+    if(L.kind==='single'){tip='<b>'+esc(B[L.bids[0]].name)+'</b>'+(honors?' <span style="color:#f3cf72">★ Honors (extra credit)</span>':'')+'<br>'+esc(promptOf(B[L.bids[0]]))+(e&&e.title?'<br>📖 '+esc(e.title):'')}
+    else if(L.kind==='group'){const ev=EVENTS[L.name],cl=CLUBS[L.name];tip=`<b>${esc(L.name)}</b>${ev?' · '+ev.icon+' '+ev.season:''} — ${done}/${L.bids.length} complete`+(isPresident(L.name)?' 👑 <span style="color:#f3cf72">Club President</span>':'')+(cl?'<br>'+esc(cl.def):'')+(ev?'<br>'+esc(ev.def)+(inSeason(ev)?'':'<br><i>Off season: opens '+ev.range+'</i>'):'')}
     else tip='<b>Start Here</b> — your journey begins (and laps end) here';
     p.lastChild.innerHTML=tip;
   });
@@ -381,13 +416,13 @@ function render(){
   const isDone=b=>status(b.id)==='complete';
   const core=BLD.filter(b=>b.type==='Core'),hon=BLD.filter(b=>b.type==='Honors'),
         ce=BLD.filter(b=>b.region==='clubs'||b.region==='events'),
-        bonus=BLD.filter(b=>b.region==='sessions'||b.region==='night');
+        bonus=BLD.filter(b=>b.region==='sessions');
   const coreDone=core.filter(isDone).length,honDone=hon.filter(isDone).length,ceDone=ce.filter(isDone).length,bonusDone=bonus.filter(isDone).length;
   const dg=degree();
   $('totbar').style.width=(dg.total/(REQ*4)*100)+'%';
-  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b><br>★ Honors (all locations): ${honDone}/${hon.length}<br>Extra credit — Clubs &amp; Events: ${ceDone}/${ce.length}<br>Extra credit — Study Sessions &amp; Night School: ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
-  $('headprog').textContent=`Degree ${dg.total}/${REQ*4} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Bonus ${bonusDone}/${bonus.length}`;
-  renderDegree(dg);
+  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b><br>★ Honors (all locations): ${honDone}/${hon.length}<br>Extra credit — Clubs &amp; Events: ${ceDone}/${ce.length}<br>👑 Club Presidents: ${Object.keys(CLUBS).filter(isPresident).length}/${Object.keys(CLUBS).length}<br>Extra credit — Study Sessions: ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
+  $('headprog').textContent=`Degree ${dg.total}/${REQ*4} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Study Sessions ${bonusDone}/${bonus.length}`;
+  renderDegree(dg);updUndo();
   $('regions').innerHTML=Object.entries(REGIONS).map(([k,r])=>{
     const all=BLD.filter(b=>b.region===k),c=all.filter(b=>b.type==='Core'),h=all.filter(b=>b.type==='Honors');
     const acad=c.length>0;                       // academic regions have Core + Honors
@@ -412,11 +447,13 @@ function renderDegree(dg){
   const opts=(other,cur)=>'<option value="">— Declare —</option>'+ACAD.map(r=>`<option value="${r}" ${r===cur?'selected':''} ${r===other?'disabled':''}>${REGIONS[r].label}</option>`).join('');
   $('selMajor').innerHTML=opts(S.minor,S.major);$('selMinor').innerHTML=opts(S.major,S.minor);
   const row=(label,n,color,note)=>`<div class="reg"><span class="sw" style="background:${color}"></span><span>${label}${note?` <span class="small">${esc(note)}</span>`:''}</span><span class="small">${n}/${REQ}</span><div class="bar"><i style="width:${n/REQ*100}%;background:${color}"></i></div></div>`;
+  $('darkopts').innerHTML=ACAD.map(r=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0;white-space:nowrap"><input type="checkbox" data-r="${r}" ${isDark(r)?'checked':''}>${REGIONS[r].label}</label>`).join('');
   $('degrows').innerHTML=row('General Studies',dg.gs,REGIONS.general.color)
-    +row('Major',dg.mj,S.major?REGIONS[S.major].color:'#ccc',S.major?REGIONS[S.major].label:'not declared')
+    +row('Major',dg.mj,S.major?REGIONS[S.major].color:'#ccc',S.major?REGIONS[S.major].label+(isDark(S.major)?' 🌙 team: '+REGIONS[S.major].label:''):'not declared')
     +row('Minor',dg.mn,S.minor?REGIONS[S.minor].color:'#ccc',S.minor?REGIONS[S.minor].label:'not declared')
     +row('Electives',dg.el,'#6b4a8a',S.major&&S.minor?'any other department':'declare major &amp; minor first');
 }
+$('darkopts').onchange=e=>{const r=e.target.dataset.r;if(!r)return;S.dark={...S.dark,[r]:e.target.checked};addLog((e.target.checked?'Sent '+REGIONS[r].label+' to Night School 🌙':'Brought '+REGIONS[r].label+' back to day classes'));save();render()};
 $('selMajor').onchange=e=>{S.major=e.target.value||null;if(S.minor===S.major)S.minor=null;addLog(S.major?'Declared major: '+REGIONS[S.major].label:'Cleared major');save();render()};
 $('selMinor').onchange=e=>{S.minor=e.target.value||null;if(S.minor===S.major)S.major=null;addLog(S.minor?'Declared minor: '+REGIONS[S.minor].label:'Cleared minor');save();render()};
 function renderExtras(){
@@ -424,9 +461,14 @@ function renderExtras(){
     const e=S.entries[b.id],st=status(b.id);
     return `<button class="cell ${st}" data-b="${b.id}"><b>${esc(label(b))}</b><span>${e&&e.title?esc(e.title):b.assigned?esc(b.assigned.title):st==='todo'?'To read':st}</span></button>`}).join('');
   $('gridSessions').innerHTML=mk('sessions',b=>b.name.replace(' Study Session',''));
-  $('gridNight').innerHTML=mk('night',b=>b.name.replace('Night School ',''));
   document.querySelectorAll('.cell').forEach(c=>c.onclick=()=>openBuilding(c.dataset.b));
 }
+
+/* ---------- undo (last roll or status change) ---------- */
+let undoSnap=null;
+function snap(){undoSnap=structuredClone(S);updUndo()}
+function updUndo(){$('btnUndo').disabled=!undoSnap||moving}
+$('btnUndo').onclick=()=>{if(!undoSnap||moving)return;S=undoSnap;undoSnap=null;save();if(curB)fillModal();render()};
 
 /* ---------- dice & movement ---------- */
 let moving=false,lastRoll=[1],lastKind='Core';
@@ -436,7 +478,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const isKind=(L,k,reg)=>L.kind==='single'&&B[L.bids[0]].type===k&&reg.includes(L.region);
 const canRoll=k=>{const reg=activeRegions(k);return LOCS.some(l=>isKind(l,k,reg)&&locStatus(l)!=='complete')};
 async function doRoll(kind){
-  if(moving||!canRoll(kind))return;moving=true;lastKind=kind;
+  if(moving||!canRoll(kind))return;snap();moving=true;lastKind=kind;
   $('btnRoll').disabled=$('btnRollH').disabled=true;
   $('dicebox').innerHTML=`<div class="die rolling ${kind==='Honors'?'honors':''}">?</div>`;
   for(let k=0;k<7;k++){await sleep(90);document.querySelector('.die').textContent=1+Math.floor(Math.random()*6)}
@@ -482,12 +524,17 @@ function fillModal(){
   const b=B[curB],e=entry(curB),r=REGIONS[b.region];
   const tl=b.type==='Honors'?'★ Honors · extra credit':b.type==='Core'?'Core · required':b.type;
   $('mchips').innerHTML=`<span class="chip" style="background:${r.color}">${esc(r.label)}${r.def?` <i class="tipd" tabindex="0" data-tip="${esc(r.def)}">ⓘ</i>`:''}</span><span class="chip type" style="color:${b.type==='Honors'?'#b8860b':r.color}">${esc(tl)}</span>`;
+  const ev=EVENTS[curLoc.name];
+  if(ev)$('mchips').innerHTML+=`<span class="chip" style="background:${r.color}">${ev.icon} ${ev.season} <i class="tipd" tabindex="0" data-tip="${esc(ev.def)}">ⓘ</i></span>`;
+  if(isDark(b.region)&&NS[b.type])$('mchips').innerHTML+='<span class="chip" style="background:#4a3b5e">🌙 Night School</span>';
+  const cl=CLUBS[curLoc.name];
+  if(cl)$('mchips').innerHTML+=`<span class="chip" style="background:${r.color}">${cl.icon} Club <i class="tipd" tabindex="0" data-tip="${esc(cl.def)}">ⓘ</i></span>`+(isPresident(curLoc.name)?'<span class="chip" style="background:#e0a528">👑 Club President</span>':'');
   $('mname').textContent=b.name;
   $('msub').textContent=curLoc.kind==='group'?`Pick one of the ${curLoc.bids.length} prompts at ${curLoc.name}`:(b.where!==r.label?b.where:'');
   $('tabs').style.display=curLoc.bids.length>1?'flex':'none';
   $('tabs').innerHTML=curLoc.bids.map(id=>`<button data-b="${id}" class="${id===curB?'on':''}"><i class="${status(id)}"></i>${esc(B[id].name)}</button>`).join('');
   $('tabs').querySelectorAll('button').forEach(t=>t.onclick=()=>{curB=t.dataset.b;fillModal()});
-  $('mprompt').textContent=b.prompt;
+  $('mprompt').textContent=promptOf(b);
   const a=b.assigned;
   $('massigned').style.display=a?'flex':'none';
   if(a){$('massigned').innerHTML=`<span><b>Assigned book:</b> ${esc(a.title)} by ${esc(a.author)}</span><button class="btn" id="useAssigned">Use assigned book</button>`;
@@ -495,6 +542,11 @@ function fillModal(){
   $('fTitle').value=e.title;$('fAuthor').value=e.author;$('fStart').value=e.start;$('fEnd').value=e.end;$('fNotes').value=e.notes;
   setCover(e.cover);
   document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===e.status));
+  const lk=locked(curB),ev2=EVENTS[b.where];
+  $('mseason').style.display=ev2&&!inSeason(ev2)?'flex':'none';
+  if(ev2)$('mseason').innerHTML=`<span>${ev2.icon} <b>Off season.</b> ${esc(ev2.season)} runs ${ev2.range}. You can add book info now, but can’t start reading until then.</span>`;
+  document.querySelectorAll('#seg button').forEach(x=>{x.disabled=lk&&x.dataset.s!=='todo';x.style.opacity=x.disabled?.4:'';x.style.cursor=x.disabled?'not-allowed':''});
+  $('fStart').disabled=lk;
   $('fEnd').disabled=e.status!=='complete';
   $('btnPlace').style.display=curLoc.i>=0?'':'none';
   drawStars(e.rating);
@@ -512,9 +564,11 @@ bind('fTitle','title');bind('fAuthor','author');bind('fStart','start');bind('fEn
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>setStatus(b.dataset.s));
 function setStatus(s){
   const e=entry(curB),prev=e.status,b=B[curB];if(prev===s)return;
+  if(locked(curB)&&s!=='todo')return;
+  snap();
   e.status=s;
   if((s==='reading'||s==='complete')&&!e.start)e.start=today();
-  if(s==='complete'){e.end=today();addLog(`Completed ${e.title?'“'+e.title+'”':'a book'} for ${b.name}${e.rating?' ★'+e.rating:''}`)}
+  if(s==='complete'){S.sinceExport=(S.sinceExport||0)+1;if(S.sinceExport>=3)$('toast').classList.add('show');e.end=today();addLog(`Completed ${e.title?'“'+e.title+'”':'a book'} for ${b.name}${e.rating?' ★'+e.rating:''}`)}
   else if(prev==='complete')e.end='';
   if(s==='reading')addLog(`Started ${e.title?'“'+e.title+'”':'reading'} for ${b.name}`);
   if(s==='dnf')addLog(`DNF at ${b.name}`);
@@ -570,7 +624,10 @@ $('btnRules').onclick=()=>{
   <h3>Honors &amp; extra credit</h3>
   <ol>
    <li><b>Honors</b> (gold-ringed pins): complete every Honors location in your major and minor to graduate <b>with honors</b>. The <b>★ Honors die</b> moves you through Honors locations in General Studies, your major and your minor. General Studies Honors don’t count toward honors graduation.</li>
-   <li><b>Clubs, Events, Study Sessions and Night School</b> are extra credit only. They’re not on the dice yet.</li>
+   <li><b>Events</b> are seasonal extra credit: Winter (Jan–Mar) Polar Plunge, Spring (Apr–Jun) Picnic Games, Summer (Jul–Sep) Summer Regatta, Fall (Oct–Dec) Rivalry Week. Click one any time to add book info, but you can only start reading during its season.</li>
+   <li><b>Clubs</b> (Grave Diggers, Stargazers, Tea Society, Zine Club) are extra credit. Each has 4 prompts: finish all 4 to become <b>Club President</b> 👑.</li>
+   <li><b>Study Sessions</b> are extra credit only. They’re not on the dice yet.</li>
+   <li><b>Night School 🌙:</b> missing a dark romance department? After hours, any department except General Studies can go dark. Tick it under Night School in the Degree card to swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If it’s your major, use the name of the map area as your team. You can turn it on or off at any time.</li>
   </ol>
   <h3>Tweak the draft</h3>
   <div class="opt"><label><input type="checkbox" id="rSkip"> Completed buildings don’t count when moving</label></div>
@@ -583,7 +640,9 @@ $('btnRules').onclick=()=>{
 /* ---------- toolbar ---------- */
 $('zoom').oninput=e=>{board.style.width=e.target.value+'%'};
 $('showPath').onchange=e=>{S.showPath=e.target.checked;save();render()};
-$('btnExport').onclick=()=>{
+$('toastX').onclick=()=>$('toast').classList.remove('show');
+$('toastExport').onclick=()=>$('btnExport').click();
+$('btnExport').onclick=()=>{S.sinceExport=0;save();$('toast').classList.remove('show');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
   a.download=`romanceopoly-2027-${today()}.json`;a.click()};
 $('btnImport').onclick=()=>$('importFile').click();
