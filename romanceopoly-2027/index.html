@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Romanceopoly 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6efe6; --card:#fffaf3; --ink:#3a2a3d; --muted:#8a778c; --line:#e6d8c6;
+  --plum:#6b4a8a; --rose:#d9668a; --gold:#e0a528; --green:#3f9a6b; --gray:#9a9096;
+  --shadow:0 6px 24px rgba(58,42,61,.15);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;font-size:15px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;margin:0}
+button{font:inherit;cursor:pointer}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+header h1{font-size:24px;color:var(--plum)}
+header .sp{flex:1}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 14px;font-weight:600}
+.btn:hover{border-color:var(--plum);color:var(--plum)}
+.btn.primary{background:var(--plum);border-color:var(--plum);color:#fff}
+.btn.primary:hover{background:#563a72;color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;padding:16px 20px}
+@media(max-width:1000px){main{grid-template-columns:1fr;padding:12px 16px}}
+.boardwrap{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.boardtools{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.boardtools label{display:flex;gap:4px;align-items:center}
+.scroller{overflow:auto;max-height:calc(100vh - 150px)}
+.board{position:relative;width:100%;line-height:0}
+.board img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none}
+.board svg.path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pin{position:absolute;width:4.6%;aspect-ratio:1;transform:translate(-50%,-50%);border:0;background:transparent;padding:0;border-radius:50%;display:grid;place-items:center;z-index:2}
+.pin .dot{width:46%;height:46%;border-radius:50%;background:rgba(255,255,255,.92);border:2px solid var(--plum);transition:.15s;display:grid;place-items:center;color:#fff;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.25);font-size:clamp(8px,.95vw,15px);font-weight:800;line-height:1}
+.pin .dot::after{content:attr(data-l)}
+.pin:hover .dot,.pin:focus-visible .dot{transform:scale(1.4);border-color:#fff;background-color:var(--rose)}
+.pin.group .dot{width:70%;height:70%;color:var(--plum)}
+.pin.group:hover .dot{color:#fff}
+.pin.reading .dot{width:62%;height:62%;background:var(--gold);border-color:#fff;animation:pulse 1.6s infinite;color:#fff}
+.pin.partial .dot{background:#8fcfae;border-color:#fff;color:#1d5a3b}
+.pin.complete .dot{width:74%;height:74%;background:var(--green);border:3px solid #fff;color:#fff}
+.pin.complete.hascover .dot{background-size:cover;background-position:center}
+.pin.complete.hascover .dot::after{content:""}
+.pin.honors .dot{border-color:var(--gold);box-shadow:0 0 0 2px rgba(224,165,40,.55),0 1px 4px rgba(0,0,0,.25)}
+.pin.honors.complete .dot{border-color:var(--gold)}
+.pin.dnf .dot{background:var(--gray);border-color:#fff;color:#fff}
+.pin.start .dot{width:70%;height:70%;background:var(--rose);border-color:#fff;color:#fff}
+.pin .tip{position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:12px;line-height:1.3;padding:5px 9px;border-radius:8px;width:max-content;max-width:240px;text-align:left;opacity:0;pointer-events:none;transition:.12s;z-index:9}
+.pin:hover .tip{opacity:1}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,165,40,.7)}50%{box-shadow:0 0 0 .7vw rgba(224,165,40,0)}}
+.token{position:absolute;width:3.4%;aspect-ratio:1;transform:translate(-50%,-112%);transition:left .22s ease-in-out,top .22s ease-in-out;z-index:4;pointer-events:none;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.token.hop{animation:hop .22s}
+@keyframes hop{50%{margin-top:-1.2%}}
+.token svg{width:100%;height:100%}
+aside{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.card h3{font-size:17px;margin-bottom:8px;color:var(--plum)}
+.card h3 small{font-family:Nunito,sans-serif;font-weight:600;color:var(--muted);font-size:12px;margin-left:6px}
+.dicebox{display:flex;gap:10px;justify-content:center;margin:6px 0 10px}
+.die{width:64px;height:64px;background:#fff;border:2px solid var(--plum);border-radius:14px;display:grid;place-items:center;font-family:Fraunces,serif;font-size:34px;font-weight:800;color:var(--plum);box-shadow:0 3px 0 var(--plum)}
+.die.honors{border-color:#b8860b;color:#8a6508;box-shadow:0 3px 0 #b8860b;background:#fff8e3}
+.die.rolling{animation:shake .12s infinite}
+@keyframes shake{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.here{font-size:14px;margin-top:8px;color:var(--muted)}
+.here b{color:var(--ink)}
+.bar{height:8px;background:#eadfd0;border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--green);border-radius:99px;transition:width .4s}
+.reg{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;align-items:center;font-size:13px;margin:7px 0}
+.reg .sw{width:12px;height:12px;border-radius:4px}
+.reg .bar{grid-column:2/4;height:6px}
+.log{list-style:none;margin:0;padding:0;font-size:13px;color:var(--muted);max-height:150px;overflow:auto}
+.log li{padding:3px 0;border-bottom:1px dashed var(--line)}
+.banner{display:none;background:linear-gradient(90deg,var(--rose),var(--gold));color:#fff;text-align:center;padding:10px;font-family:Fraunces,serif;font-size:18px}
+.banner.show{display:block}
+.extras{display:grid;grid-template-columns:3fr 2fr;gap:16px;padding:0 20px 28px}
+@media(max-width:1000px){.extras{grid-template-columns:1fr;padding:0 16px 24px}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.cell{text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-height:58px}
+.cell b{font-size:14px}
+.cell span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell:hover{border-color:var(--plum)}
+.cell.reading{border-color:var(--gold);background:#fff7e0}
+.cell.complete{border-color:var(--green);background:#e8f6ee}
+.cell.dnf{border-color:var(--gray);background:#eee}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(40,25,45,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.overlay.open{display:flex}
+.modal{background:var(--card);border-radius:18px;width:min(720px,100%);max-height:94vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.mhead{display:flex;align-items:flex-start;gap:10px;padding:16px 20px 10px;border-bottom:1px solid var(--line)}
+.mhead h2{font-size:24px;flex:1;line-height:1.15}
+.chip{display:inline-block;font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;color:#fff;margin:0 4px 4px 0}
+.chip.type{background:#fff!important;border:1.5px solid currentColor}
+.x{border:0;background:transparent;font-size:26px;line-height:1;color:var(--muted)}
+.mbody{padding:14px 20px 20px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:2px solid var(--line);background:#fff;border-radius:10px;padding:5px 10px;font-weight:700;font-size:13px;display:flex;gap:6px;align-items:center}
+.tabs button.on{border-color:var(--plum);color:var(--plum)}
+.tabs i{width:10px;height:10px;border-radius:50%;background:#d8cfdc;display:inline-block}
+.tabs i.reading{background:var(--gold)}.tabs i.complete{background:var(--green)}.tabs i.dnf{background:var(--gray)}
+.prompt{background:#fff;border-left:5px solid var(--plum);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:16px}
+.assigned{background:#fff3f7;border:1px dashed var(--rose);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:14px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.cols{display:grid;grid-template-columns:150px 1fr;gap:18px}
+@media(max-width:560px){.cols{grid-template-columns:1fr}}
+.cover{width:150px;height:225px;border:2px dashed var(--line);border-radius:8px;background:#fff center/cover no-repeat;display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;position:relative;overflow:hidden}
+.cover:hover{border-color:var(--plum)}
+.cover .rm{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:0;border-radius:50%;width:22px;height:22px;display:none}
+.cover.has .rm{display:block}
+.cover.has{border-style:solid}
+label.f{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:8px 0 3px;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=date],textarea,select{width:100%;font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;background:#fff}
+.seg button{flex:1;border:0;background:transparent;padding:7px 4px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button.on[data-s=todo]{background:#cfc4d6;color:var(--ink)}
+.seg button.on[data-s=reading]{background:var(--gold);color:#fff}
+.seg button.on[data-s=complete]{background:var(--green);color:#fff}
+.seg button.on[data-s=dnf]{background:var(--gray);color:#fff}
+.stars{display:inline-flex;gap:2px;font-size:30px;line-height:1;user-select:none}
+.star{position:relative;width:1em;color:#e2d6c6;cursor:pointer}
+.star .fill{position:absolute;left:0;top:0;overflow:hidden;color:var(--gold);width:0}
+.star .h{position:absolute;top:0;height:100%;width:50%}
+.star .h.l{left:0}.star .h.r{right:0}
+.linkbtn{border:0;background:none;color:var(--plum);text-decoration:underline;font-size:13px;padding:0}
+.mfoot{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;justify-content:space-between}
+.small{font-size:12px;color:var(--muted)}
+.rules ol{padding-left:20px;margin:6px 0 12px}
+.rules li{margin:5px 0}
+.rules .opt{display:flex;gap:8px;align-items:center;margin:6px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Romanceopoly 2027</h1>
+  <span id="headprog" class="small"></span>
+  <span class="sp"></span>
+  <button class="btn" id="btnRules">Rules</button>
+  <button class="btn" id="btnExport">Export</button>
+  <button class="btn" id="btnImport">Import</button>
+  <button class="btn" id="btnReset">Reset</button>
+  <input type="file" id="importFile" accept="application/json" hidden>
+</header>
+<div id="banner" class="banner">🎓 Every Core building is complete — you've graduated Romanceopoly 2027! Honors are extra credit. 🎓</div>
+<main>
+  <section class="boardwrap">
+    <div class="boardtools">
+      <label>Zoom <input type="range" id="zoom" min="100" max="250" value="100"></label>
+      <label><input type="checkbox" id="showPath"> Show path</label>
+      <span style="flex:1"></span>
+      <span>Click any building to open it</span>
+    </div>
+    <div class="scroller" id="scroller">
+      <div class="board" id="board">
+        <img src="board.webp" alt="Romanceopoly 2027 board" draggable="false">
+        <svg class="path" id="pathsvg" viewBox="0 0 2000 1336" preserveAspectRatio="none" style="display:none"></svg>
+        <div class="token" id="token"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" fill="#d9668a" stroke="#fff" stroke-width="3"/><path d="M20 28c-6-4.5-9-7.5-9-11a4.6 4.6 0 0 1 9-1.4A4.6 4.6 0 0 1 29 17c0 3.500-3 6.500-9 11z" fill="#fff"/></svg></div>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <div class="card">
+      <h3>Roll the dice</h3>
+      <div class="dicebox" id="dicebox"></div>
+      <button class="btn primary" id="btnRoll" style="width:100%;padding:10px">Roll Core die</button>
+      <button class="btn" id="btnRollH" style="width:100%;padding:8px;margin-top:6px;border-color:#b8860b;color:#8a6508">★ Roll Honors die (extra credit)</button>
+      <div class="here" id="here"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn" id="btnOpenHere" style="flex:1">Open building</button>
+        <button class="btn" id="btnPass" style="flex:1">Pass space</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Progress</h3>
+      <div class="bar"><i id="totbar"></i></div>
+      <div class="small" id="totlabel" style="margin:4px 0 8px"></div>
+      <div id="regions"></div>
+    </div>
+    <div class="card">
+      <h3>Journey log</h3>
+      <ul class="log" id="log"></ul>
+    </div>
+  </aside>
+</main>
+<section class="extras">
+  <div class="card"><h3>Bonus: Study Sessions <small>one assigned read per month · not on the board</small></h3><div class="grid" id="gridSessions"></div></div>
+  <div class="card"><h3>Bonus: Night School <small>not on the board</small></h3><div class="grid" id="gridNight"></div></div>
+</section>
+
+<!-- Building modal -->
+<div class="overlay" id="ov"><div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="mhead">
+    <div style="flex:1"><div id="mchips"></div><h2 id="mname"></h2><div class="small" id="msub"></div></div>
+    <button class="x" id="mclose" aria-label="Close">×</button>
+  </div>
+  <div class="mbody">
+    <div class="tabs" id="tabs"></div>
+    <div class="prompt" id="mprompt"></div>
+    <div class="assigned" id="massigned"></div>
+    <div class="cols">
+      <div>
+        <div class="cover" id="cover" title="Click to add a cover"><span>+ Add cover<br><small>click or paste image</small></span><button class="rm" id="coverRm" title="Remove cover">×</button></div>
+        <input type="file" id="coverFile" accept="image/*" hidden>
+      </div>
+      <div>
+        <label class="f" style="margin-top:0">Status</label>
+        <div class="seg" id="seg">
+          <button data-s="todo">To read</button><button data-s="reading">Reading</button><button data-s="complete">Complete</button><button data-s="dnf">DNF</button>
+        </div>
+        <label class="f">Title</label><input type="text" id="fTitle" placeholder="Book title">
+        <label class="f">Author</label><input type="text" id="fAuthor" placeholder="Author">
+        <div class="row2">
+          <div><label class="f">Started</label><input type="date" id="fStart"></div>
+          <div><label class="f">Completed</label><input type="date" id="fEnd"></div>
+        </div>
+        <label class="f">Rating</label>
+        <div style="display:flex;align-items:center;gap:10px"><div class="stars" id="stars"></div><span class="small" id="ratingTxt"></span><button class="linkbtn" id="ratingClr">clear</button></div>
+      </div>
+    </div>
+    <label class="f">Notes</label>
+    <textarea id="fNotes" placeholder="Thoughts, spice level, favorite quote…"></textarea>
+    <div class="mfoot">
+      <button class="btn" id="btnPlace">Place my token here</button>
+      <button class="btn" id="btnClear">Clear this building</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- Generic modal (rules / start) -->
+<div class="overlay" id="ov2"><div class="modal rules" id="modal2">
+  <div class="mhead"><h2 id="m2title"></h2><button class="x" id="m2close" aria-label="Close">×</button></div>
+  <div class="mbody" id="m2body"></div>
+</div></div>
+
+<script src="data.js"></script>
+<script>
+const IMG_W=2000, IMG_H=1336;
+const REGIONS={
+  general:{label:'General Studies',color:'#d8b95a'},
+  ruinous:{label:'Ruinous Arts',color:'#e07fa6'},
+  special:{label:'Special Collections',color:'#b98a3c'},
+  unnatural:{label:'Unnatural Sciences',color:'#4fa66a'},
+  applied:{label:'Applied Mythology',color:'#8068c4'},
+  current:{label:'Current Affairs',color:'#e8884f'},
+  clubs:{label:'Clubs',color:'#6f86b8'},
+  events:{label:'Events',color:'#4fb0d3'},
+  sessions:{label:'Study Sessions',color:'#c1704f'},
+  night:{label:'Night School',color:'#4a3b5e'}
+};
+const ACADEMIC={'General Studies':'general','Ruinous Arts':'ruinous','Special Collections':'special','Unnatural Sciences':'unnatural','Applied Mythology':'applied','Current Affairs':'current'};
+const GROUPREG={'Grave Diggers':'clubs','Stargazers':'clubs','Tea Society':'clubs','Zine Club':'clubs','Polar Plunge':'events','Picnic Games':'events','Summer Regatta':'events','Rivalry Week':'events','Study Sessions':'sessions','Night School':'night'};
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+/* Buildings come from data.js (your table). */
+const BLD=BUILDINGS.map(b=>({id:slug(b.n),name:b.n,where:b.w,type:b.t,prompt:b.p,assigned:b.ab,region:ACADEMIC[b.w]||GROUPREG[b.w]}));
+const B=Object.fromEntries(BLD.map(b=>[b.id,b]));
+const ALIAS={'field-of-study':'field-study'}; // map label → table name
+
+/* Board pins in dice-path order: [map label, x, y] in board-image pixels. */
+const RAW=[
+ ['Start Here',1010,1165],['Class of 2027',1010,1060],['Peer Advising',1150,980],['Unfinished Wing',1180,860],['Retake',1070,760],['Waitlist',880,700],['Mailroom',940,810],['Lost & Found',870,900],['Welcome Center',860,1020],
+ ['Family Seat',540,1110],['Trade School',670,1040],['Officer Training',690,790],['Rank and File',520,890],['Ruined',340,950],['Field of Study',330,820],['Poste Restante',300,1050],['Fellows Only',370,1150],
+ ['Rivalry Week',80,1070],['Summer Regatta',130,740],['Picnic Games',110,490],['Polar Plunge',100,130],
+ ['Pen Names',330,290],['First Editions',320,430],['Restricted Shelf',370,560],['Periodicals',630,520],['Founding Documents',550,390],['Clinch Archive',680,270],['Circulation',690,110],['Millennium Stacks',490,80],
+ ['Occult Career Center',790,100],['Blood Bank',1020,70],['Monster Row',1200,80],['Full Moon Observatory',1050,250],['Familiar\'s Lounge',1100,360],['Interspecies Mixer',940,360],['Cryptid Watch',1040,500],['Psychic Services',1140,490],
+ ['Bloodline Admissions',1340,500],['Dragon Paddock',1620,590],['Oracle Registrar',1720,520],['Expedition Credit',1560,450],['Fae Tithe',1720,360],['Trial by Combat',1500,280],['Rebel Assembly',1380,130],['Hired Blade',1680,130],
+ ['Grave Diggers',1880,110],['Stargazers',1850,380],['Tea Society',1850,740],['Zine Club',1900,1070],
+ ['Family Housing',1450,720],['Kiss Cam',1660,740],['Homecoming',1610,930],['Chapter House',1720,1050],['Donor Wall',1690,1130],['Podcast Studio',1560,1100],['Continuing Education',1400,1140],['Office Hours',1390,1040]
+];
+const LOCS=RAW.map(([name,x,y],i)=>{
+  const id=slug(name),bid=B[ALIAS[id]||id]?(ALIAS[id]||id):null;
+  if(bid)return{i,id,name,x,y,kind:'single',bids:[bid],region:B[bid].region};
+  const g=BLD.filter(b=>b.where===name);
+  if(g.length)return{i,id,name,x,y,kind:'group',bids:g.map(b=>b.id),region:g[0].region};
+  return{i,id,name,x,y,kind:'start',bids:[],region:'general'};
+});
+const N=LOCS.length;
+const missing=BLD.filter(b=>!LOCS.some(l=>l.bids.includes(b.id))&&!['sessions','night'].includes(b.region));
+if(missing.length)console.warn('Buildings not on the map:',missing.map(b=>b.name));
+
+const KEY='romanceopoly-2027-v2';
+const DEFAULT={pos:0,laps:0,awaiting:null,entries:{},log:[],rules:{dice:1,skipDone:true,mustFinish:true},showPath:false};
+let S=load();
+function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r)return{...DEFAULT,...r,rules:{...DEFAULT.rules,...(r.rules||{})}};}catch(e){}return structuredClone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('Could not save — browser storage may be full. Use Export to back up your data.')}}
+const today=()=>new Date().toLocaleDateString('en-CA');
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const entry=id=>S.entries[id]||(S.entries[id]={status:'todo',title:'',author:'',cover:'',start:'',end:'',rating:0,notes:''});
+const status=id=>(S.entries[id]&&S.entries[id].status)||'todo';
+function addLog(t){S.log.unshift({t,d:today()});S.log=S.log.slice(0,60)}
+function locStatus(L){
+  if(L.kind==='start')return 'start';
+  const st=L.bids.map(status);
+  if(L.kind==='single')return st[0];
+  if(st.every(s=>s==='complete'))return 'complete';
+  if(st.includes('reading'))return 'reading';
+  if(st.includes('complete'))return 'partial';
+  return 'todo';
+}
+
+/* ---------- board ---------- */
+const board=$('board');
+LOCS.forEach(L=>{
+  const b=document.createElement('button');
+  b.className='pin';b.id='pin-'+L.id;
+  b.style.left=(L.x/IMG_W*100)+'%';b.style.top=(L.y/IMG_H*100)+'%';
+  b.innerHTML='<span class="dot"></span><span class="tip"></span>';
+  b.addEventListener('click',()=>openLoc(L.i));
+  board.appendChild(b);
+});
+$('pathsvg').innerHTML=`<polyline points="${LOCS.concat([LOCS[0]]).map(s=>s.x+','+s.y).join(' ')}" fill="none" stroke="#6b4a8a" stroke-opacity=".55" stroke-width="5" stroke-dasharray="4 14" stroke-linecap="round"/>`;
+function placeToken(i,hop){
+  const t=$('token'),L=LOCS[i];
+  t.style.left=(L.x/IMG_W*100)+'%';t.style.top=(L.y/IMG_H*100)+'%';
+  if(hop){t.classList.remove('hop');void t.offsetWidth;t.classList.add('hop')}
+}
+
+/* ---------- render ---------- */
+function render(){
+  LOCS.forEach(L=>{
+    const p=$('pin-'+L.id),st=locStatus(L),dot=p.firstChild;
+    const e=L.kind==='single'?S.entries[L.bids[0]]:null,cover=st==='complete'&&e&&e.cover;
+    const honors=L.kind==='single'&&B[L.bids[0]].type==='Honors';
+    p.className='pin '+st+(L.kind==='group'?' group':'')+(cover?' hascover':'')+(honors?' honors':'');
+    dot.style.backgroundImage=cover?`url(${e.cover})`:'';
+    const done=L.bids.filter(b=>status(b)==='complete').length;
+    dot.dataset.l=L.kind==='start'?'★':st==='complete'?'✓':L.kind==='group'?(done?done+'/'+L.bids.length:L.bids.length):'';
+    let tip=esc(L.name);
+    if(L.kind==='single'){tip='<b>'+esc(B[L.bids[0]].name)+'</b>'+(honors?' <span style="color:#f3cf72">★ Honors (extra credit)</span>':'')+'<br>'+esc(B[L.bids[0]].prompt)+(e&&e.title?'<br>📖 '+esc(e.title):'')}
+    else if(L.kind==='group')tip=`<b>${esc(L.name)}</b> — ${done}/${L.bids.length} complete`;
+    else tip='<b>Start Here</b> — your journey begins (and laps end) here';
+    p.lastChild.innerHTML=tip;
+  });
+  placeToken(S.pos);
+  const isDone=b=>status(b.id)==='complete';
+  const core=BLD.filter(b=>b.type==='Core'),hon=BLD.filter(b=>b.type==='Honors'),
+        ce=BLD.filter(b=>b.region==='clubs'||b.region==='events'),
+        bonus=BLD.filter(b=>b.region==='sessions'||b.region==='night');
+  const coreDone=core.filter(isDone).length,honDone=hon.filter(isDone).length,ceDone=ce.filter(isDone).length,bonusDone=bonus.filter(isDone).length;
+  $('totbar').style.width=(coreDone/core.length*100)+'%';
+  $('totlabel').innerHTML=`<b>Core (required): ${coreDone}/${core.length}</b><br>★ Honors (extra credit): ${honDone}/${hon.length}<br>Clubs &amp; Events: ${ceDone}/${ce.length}<br>Bonus (Study Sessions &amp; Night School): ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
+  $('headprog').textContent=`Core ${coreDone}/${core.length} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Bonus ${bonusDone}/${bonus.length}`;
+  $('regions').innerHTML=Object.entries(REGIONS).map(([k,r])=>{
+    const all=BLD.filter(b=>b.region===k),c=all.filter(b=>b.type==='Core'),h=all.filter(b=>b.type==='Honors');
+    const acad=c.length>0;                       // academic regions have Core + Honors
+    const main=acad?c:all,d=main.filter(isDone).length,hd=h.filter(isDone).length;
+    const badge=d===main.length?(acad&&h.length&&hd===h.length?' 🏅★':' 🏅'):'';
+    return `<div class="reg"><span class="sw" style="background:${r.color}"></span><span>${r.label}${badge}</span><span class="small">${d}/${main.length}${acad?' · ★'+hd+'/'+h.length:''}</span><div class="bar"><i style="width:${d/main.length*100}%;background:${r.color}"></i></div></div>`;
+  }).join('');
+  $('log').innerHTML=S.log.slice(0,12).map(l=>`<li><b>${l.d.slice(5)}</b> ${esc(l.t)}</li>`).join('')||'<li>Nothing yet — roll the dice!</li>';
+  const cur=LOCS[S.pos],boardDone=LOCS.every(l=>l.kind==='start'||locStatus(l)==='complete');
+  $('here').innerHTML=`Your token is on <b>${esc(cur.name)}</b>`+(S.awaiting!=null?` — <b>finish or pass</b> this space before rolling.`:'.');
+  const blocked=moving||(S.rules.mustFinish&&S.awaiting!=null);
+  $('btnRoll').disabled=blocked||!canRoll('Core');
+  $('btnRollH').disabled=blocked||!canRoll('Honors');
+  $('btnPass').disabled=S.awaiting==null;
+  $('banner').classList.toggle('show',coreDone===core.length);
+  $('showPath').checked=S.showPath;$('pathsvg').style.display=S.showPath?'block':'none';
+  renderDice(lastRoll);
+  renderExtras();
+}
+function renderExtras(){
+  const mk=(region,label)=>BLD.filter(b=>b.region===region).map(b=>{
+    const e=S.entries[b.id],st=status(b.id);
+    return `<button class="cell ${st}" data-b="${b.id}"><b>${esc(label(b))}</b><span>${e&&e.title?esc(e.title):b.assigned?esc(b.assigned.title):st==='todo'?'To read':st}</span></button>`}).join('');
+  $('gridSessions').innerHTML=mk('sessions',b=>b.name.replace(' Study Session',''));
+  $('gridNight').innerHTML=mk('night',b=>b.name.replace('Night School ',''));
+  document.querySelectorAll('.cell').forEach(c=>c.onclick=()=>openBuilding(c.dataset.b));
+}
+
+/* ---------- dice & movement ---------- */
+let moving=false,lastRoll=[1],lastKind='Core';
+function renderDice(vals){$('dicebox').innerHTML=vals.map(v=>`<div class="die ${lastKind==='Honors'?'honors':''}">${v}</div>`).join('')}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// A Core roll only counts Core buildings as it moves; an Honors roll only counts Honors buildings.
+const isKind=(L,k)=>L.kind==='single'&&B[L.bids[0]].type===k;
+const canRoll=k=>LOCS.some(l=>isKind(l,k)&&locStatus(l)!=='complete');
+async function doRoll(kind){
+  if(moving||!canRoll(kind))return;moving=true;lastKind=kind;
+  $('btnRoll').disabled=$('btnRollH').disabled=true;
+  $('dicebox').innerHTML=`<div class="die rolling ${kind==='Honors'?'honors':''}">?</div>`;
+  for(let k=0;k<7;k++){await sleep(90);document.querySelector('.die').textContent=1+Math.floor(Math.random()*6)}
+  const total=1+Math.floor(Math.random()*6);lastRoll=[total];
+  renderDice(lastRoll);
+  await sleep(350);
+  let i=S.pos,steps=total,lapped=false;
+  while(steps>0){
+    i=(i+1)%N;
+    if(i===0){S.laps++;lapped=true}
+    placeToken(i,true);S.pos=i;
+    await sleep(240);
+    if(isKind(LOCS[i],kind)&&(!S.rules.skipDone||locStatus(LOCS[i])!=='complete'))steps--;
+  }
+  const L=LOCS[i];
+  S.awaiting=locStatus(L)==='complete'?null:i;
+  addLog(`Rolled a ${total} on the ${kind} die → ${L.name}`);
+  if(lapped)addLog('Passed Start Here — lap bonus: free pick of any open building!');
+  moving=false;save();render();
+  setTimeout(()=>openLoc(i),200);
+};
+$('btnRoll').onclick=()=>doRoll('Core');
+$('btnRollH').onclick=()=>doRoll('Honors');
+$('btnPass').onclick=()=>{S.awaiting=null;addLog('Passed '+LOCS[S.pos].name);save();render()};
+$('btnOpenHere').onclick=()=>openLoc(S.pos);
+
+/* ---------- building modal ---------- */
+let curLoc=null,curB=null;
+function openLoc(i){
+  const L=LOCS[i];
+  if(L.kind==='start'){openM2('Start Here',`<p>Welcome to campus! Roll the dice to move your token to your first building. Each time your token passes this space you earn a <b>lap bonus</b>: a free pick of any open building.</p><p class="small">You can still click any building on the map at any time to read ahead or log a book.</p>`);return}
+  curLoc=L;
+  // for groups, open on the first unfinished building
+  curB=L.bids.find(b=>status(b)!=='complete')||L.bids[0];
+  showModal();
+}
+function openBuilding(bid){
+  const b=B[bid];
+  curLoc={i:-1,kind:'single',bids:[bid],region:b.region,name:b.where};curB=bid;showModal();
+}
+function showModal(){fillModal();$('ov').classList.add('open')}
+function fillModal(){
+  const b=B[curB],e=entry(curB),r=REGIONS[b.region];
+  const tl=b.type==='Honors'?'★ Honors · extra credit':b.type==='Core'?'Core · required':b.type;
+  $('mchips').innerHTML=`<span class="chip" style="background:${r.color}">${esc(r.label)}</span><span class="chip type" style="color:${b.type==='Honors'?'#b8860b':r.color}">${esc(tl)}</span>`;
+  $('mname').textContent=b.name;
+  $('msub').textContent=curLoc.kind==='group'?`Pick one of the ${curLoc.bids.length} prompts at ${curLoc.name}`:(b.where!==r.label?b.where:'');
+  $('tabs').style.display=curLoc.bids.length>1?'flex':'none';
+  $('tabs').innerHTML=curLoc.bids.map(id=>`<button data-b="${id}" class="${id===curB?'on':''}"><i class="${status(id)}"></i>${esc(B[id].name)}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(t=>t.onclick=()=>{curB=t.dataset.b;fillModal()});
+  $('mprompt').textContent=b.prompt;
+  const a=b.assigned;
+  $('massigned').style.display=a?'flex':'none';
+  if(a){$('massigned').innerHTML=`<span><b>Assigned book:</b> ${esc(a.title)} by ${esc(a.author)}</span><button class="btn" id="useAssigned">Use assigned book</button>`;
+    $('useAssigned').onclick=()=>{e.title=a.title;e.author=a.author;save();fillModal()}}
+  $('fTitle').value=e.title;$('fAuthor').value=e.author;$('fStart').value=e.start;$('fEnd').value=e.end;$('fNotes').value=e.notes;
+  setCover(e.cover);
+  document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x.dataset.s===e.status));
+  $('fEnd').disabled=e.status!=='complete';
+  $('btnPlace').style.display=curLoc.i>=0?'':'none';
+  drawStars(e.rating);
+}
+function closeSpace(){$('ov').classList.remove('open');curLoc=curB=null;
+  for(const k in S.entries){const e=S.entries[k];if(e.status==='todo'&&!e.title&&!e.author&&!e.cover&&!e.start&&!e.end&&!e.rating&&!e.notes)delete S.entries[k]}
+  save();render()}
+$('mclose').onclick=closeSpace;
+$('ov').addEventListener('mousedown',e=>{if(e.target===$('ov'))closeSpace()});
+addEventListener('keydown',e=>{if(e.key==='Escape'){if($('ov2').classList.contains('open'))$('ov2').classList.remove('open');else if(curB)closeSpace()}});
+
+const bind=(id,key)=>$(id).addEventListener('input',e=>{entry(curB)[key]=e.target.value;save()});
+bind('fTitle','title');bind('fAuthor','author');bind('fStart','start');bind('fEnd','end');bind('fNotes','notes');
+
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>setStatus(b.dataset.s));
+function setStatus(s){
+  const e=entry(curB),prev=e.status,b=B[curB];if(prev===s)return;
+  e.status=s;
+  if((s==='reading'||s==='complete')&&!e.start)e.start=today();
+  if(s==='complete'){e.end=today();addLog(`Completed ${e.title?'“'+e.title+'”':'a book'} for ${b.name}${e.rating?' ★'+e.rating:''}`)}
+  else if(prev==='complete')e.end='';
+  if(s==='reading')addLog(`Started ${e.title?'“'+e.title+'”':'reading'} for ${b.name}`);
+  if(s==='dnf')addLog(`DNF at ${b.name}`);
+  if((s==='complete'||s==='dnf')&&S.awaiting===curLoc.i)S.awaiting=null;
+  if(s==='reading'&&curLoc.i>=0&&curLoc.i===S.pos)S.awaiting=S.pos;
+  save();fillModal();render();
+}
+function drawStars(v){
+  $('stars').innerHTML=[1,2,3,4,5].map(n=>`<span class="star">★<span class="fill" style="width:${Math.max(0,Math.min(1,v-(n-1)))*100}%">★</span><span class="h l" data-v="${n-.5}"></span><span class="h r" data-v="${n}"></span></span>`).join('');
+  $('ratingTxt').textContent=v?v+' / 5':'';
+  $('stars').querySelectorAll('.h').forEach(h=>h.onclick=()=>{const e=entry(curB);e.rating=+h.dataset.v;save();drawStars(e.rating)});
+}
+$('ratingClr').onclick=()=>{entry(curB).rating=0;save();drawStars(0)};
+function setCover(src){const c=$('cover');c.style.backgroundImage=src?`url(${src})`:'';c.classList.toggle('has',!!src);c.firstElementChild.style.display=src?'none':''}
+$('cover').onclick=e=>{if(e.target.id!=='coverRm')$('coverFile').click()};
+$('coverRm').onclick=e=>{e.stopPropagation();entry(curB).cover='';save();setCover('')};
+$('coverFile').onchange=e=>{const f=e.target.files[0];if(f)ingestImage(f);e.target.value=''};
+addEventListener('paste',e=>{if(!curB)return;const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(it){ingestImage(it.getAsFile());e.preventDefault()}});
+function ingestImage(file){
+  const img=new Image(),url=URL.createObjectURL(file),id=curB;
+  img.onload=()=>{
+    const sc=Math.min(1,320/img.width),c=document.createElement('canvas');
+    c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    const d=c.toDataURL('image/jpeg',.82);entry(id).cover=d;save();if(curB===id)setCover(d);URL.revokeObjectURL(url)};
+  img.src=url;
+}
+$('btnPlace').onclick=()=>{S.pos=curLoc.i;addLog('Moved token to '+curLoc.name);save();render()};
+$('btnClear').onclick=()=>{if(confirm('Clear everything entered for '+B[curB].name+'?')){delete S.entries[curB];save();fillModal();render()}};
+
+/* ---------- rules ---------- */
+function openM2(title,html){$('m2title').textContent=title;$('m2body').innerHTML=html;$('ov2').classList.add('open')}
+$('m2close').onclick=()=>$('ov2').classList.remove('open');
+$('ov2').addEventListener('mousedown',e=>{if(e.target===$('ov2'))$('ov2').classList.remove('open')});
+$('btnRules').onclick=()=>{
+  openM2('How to play (draft rules)',`
+  <ol>
+   <li><b>Start</b> on <i>Start Here</i>. The map has ${N-1} stops: 48 academic buildings (Core &amp; Honors) plus 8 Clubs and Events that each hold 4 prompts.</li>
+   <li><b>One die, two rolls.</b> The <b>Core die</b> moves your token clockwise to a <b>Core</b> building: the die counts only open Core buildings along the path, hopping over everything else. The <b>★ Honors die</b> does the same for <b>Honors</b> buildings (extra credit). Turn on “Show path” to see the route.</li>
+   <li><b>Land</b> on a building and read a book that fits its prompt. Prioritize Core; roll the Honors die when you want extra credit.</li>
+   <li><b>Clubs &amp; Events</b> aren’t reached by either die yet. Click them any time to read.</li>
+   <li>Mark it <i>Reading</i> when you begin; <i>Complete</i> auto-stamps today’s date. Add a rating and the pin turns green (or shows your cover).</li>
+   <li><b>Finish before you roll again</b> — or mark the book DNF, or pass the space.</li>
+   <li><b>Lap bonus:</b> each time you pass Start Here, pick any open building for a free read.</li>
+   <li><b>Bonus:</b> Study Sessions (12 monthly assigned reads) and Night School (8 reads) live below the map. They count toward your bonus progress, but they aren’t on the board and never come up on the dice.</li>
+   <li><b>Core</b> buildings are required to graduate. <b>Honors</b> buildings (gold-ringed pins) are extra credit, like making the honor roll.</li>
+   <li>Complete all Core buildings in a region for its 🏅; add every Honors one too for 🏅★. You can always click any building to read ahead.</li>
+  </ol>
+  <h3>Tweak the draft</h3>
+  <div class="opt"><label><input type="checkbox" id="rSkip"> Completed buildings don’t count when moving</label></div>
+  <div class="opt"><label><input type="checkbox" id="rMust"> Must finish/DNF/pass current space before rolling</label></div>`);
+  $('rSkip').checked=S.rules.skipDone;$('rMust').checked=S.rules.mustFinish;
+  $('rSkip').onchange=e=>{S.rules.skipDone=e.target.checked;save()};
+  $('rMust').onchange=e=>{S.rules.mustFinish=e.target.checked;save();render()};
+};
+
+/* ---------- toolbar ---------- */
+$('zoom').oninput=e=>{board.style.width=e.target.value+'%'};
+$('showPath').onchange=e=>{S.showPath=e.target.checked;save();render()};
+$('btnExport').onclick=()=>{
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+  a.download=`romanceopoly-2027-${today()}.json`;a.click()};
+$('btnImport').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+  try{const d=JSON.parse(await f.text());if(!d.entries)throw 0;if(confirm('Replace current progress with this file?')){S={...DEFAULT,...d};save();render()}}catch{alert('That file doesn’t look like a Romanceopoly export.')}e.target.value=''};
+$('btnReset').onclick=()=>{if(confirm('Reset ALL progress? (Export first if you want a backup.)')){S=structuredClone(DEFAULT);save();render()}};
+
+render();
+</script>
+</body>
+</html>
