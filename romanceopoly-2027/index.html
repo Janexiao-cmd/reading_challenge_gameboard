@@ -131,6 +131,10 @@ textarea{resize:vertical;min-height:60px}
 .rules ol{padding-left:20px;margin:6px 0 12px}
 .rules li{margin:5px 0}
 .rules .opt{display:flex;gap:8px;align-items:center;margin:6px 0}
+.tipd{position:relative;cursor:help;font-style:normal;opacity:.75}
+.tipd:hover,.tipd:focus{opacity:1;outline:0}
+.tipd.r[data-tip]:hover::after,.tipd.r[data-tip]:focus::after{left:auto;right:-8px}
+.tipd[data-tip]:hover::after,.tipd[data-tip]:focus::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);left:0;z-index:60;width:max-content;max-width:260px;background:var(--ink);color:#fff;font:400 12px/1.4 Nunito,sans-serif;padding:8px 10px;border-radius:8px;white-space:normal;text-transform:none;letter-spacing:0;box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
@@ -144,14 +148,14 @@ textarea{resize:vertical;min-height:60px}
   <button class="btn" id="btnReset">Reset</button>
   <input type="file" id="importFile" accept="application/json" hidden>
 </header>
-<div id="banner" class="banner">🎓 Every Core building is complete — you've graduated Romanceopoly 2027! Honors are extra credit. 🎓</div>
+<div id="banner" class="banner"></div>
 <main>
   <section class="boardwrap">
     <div class="boardtools">
       <label>Zoom <input type="range" id="zoom" min="100" max="250" value="100"></label>
       <label><input type="checkbox" id="showPath"> Show path</label>
       <span style="flex:1"></span>
-      <span>Click any building to open it</span>
+      <span>Click any location to open it</span>
     </div>
     <div class="scroller" id="scroller">
       <div class="board" id="board">
@@ -169,9 +173,14 @@ textarea{resize:vertical;min-height:60px}
       <button class="btn" id="btnRollH" style="width:100%;padding:8px;margin-top:6px;border-color:#b8860b;color:#8a6508">★ Roll Honors die (extra credit)</button>
       <div class="here" id="here"></div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn" id="btnOpenHere" style="flex:1">Open building</button>
+        <button class="btn" id="btnOpenHere" style="flex:1">Open location</button>
         <button class="btn" id="btnPass" style="flex:1">Pass space</button>
       </div>
+    </div>
+    <div class="card">
+      <h3>Degree <small>20 books to graduate</small></h3>
+      <div class="row2"><div><label class="f" style="margin-top:0">Major</label><select id="selMajor"></select></div><div><label class="f" style="margin-top:0">Minor</label><select id="selMinor"></select></div></div>
+      <div id="degrows" style="margin-top:6px"></div>
     </div>
     <div class="card">
       <h3>Progress</h3>
@@ -224,7 +233,7 @@ textarea{resize:vertical;min-height:60px}
     <textarea id="fNotes" placeholder="Thoughts, spice level, favorite quote…"></textarea>
     <div class="mfoot">
       <button class="btn" id="btnPlace">Place my token here</button>
-      <button class="btn" id="btnClear">Clear this building</button>
+      <button class="btn" id="btnClear">Clear this location</button>
     </div>
   </div>
 </div></div>
@@ -240,11 +249,11 @@ textarea{resize:vertical;min-height:60px}
 const IMG_W=2000, IMG_H=1336;
 const REGIONS={
   general:{label:'General Studies',color:'#d8b95a'},
-  ruinous:{label:'Ruinous Arts',color:'#e07fa6'},
-  special:{label:'Special Collections',color:'#b98a3c'},
-  unnatural:{label:'Unnatural Sciences',color:'#4fa66a'},
-  applied:{label:'Applied Mythology',color:'#8068c4'},
-  current:{label:'Current Affairs',color:'#e8884f'},
+  ruinous:{label:'Ruinous Arts',color:'#e07fa6',def:"Historical romance through London ballrooms and a trip outside of England. Let's fall in love with a grumpy duke or get ruined by a spy in a beautiful maze."},
+  special:{label:'Special Collections',color:'#b98a3c',def:'Where romance history lives: the clinch covers, the spinner racks full of romance. Explore the decades and how romance changes. Any subgenre counts here.'},
+  unnatural:{label:'Unnatural Sciences',color:'#4fa66a',def:"Everything that goes bump in the night and then catches feelings: fated mates, vampire brotherhoods. If it has fangs, claws, tentacles or a soul bond, but it's still in the real world, you can find it here."},
+  applied:{label:'Applied Mythology',color:'#8068c4',def:'Bargains you should have read the fine print on, heirs to thrones nobody asked for, tournaments, rebellions and the occasional dragon with opinions about your love life.'},
+  current:{label:'Current Affairs',color:'#e8884f',def:'Contemporary romance set in the real world, group chats and small-town gossip included. Enroll here for the boy next door and the bad boy that will ruin your sleep.'},
   clubs:{label:'Clubs',color:'#6f86b8'},
   events:{label:'Events',color:'#4fb0d3'},
   sessions:{label:'Study Sessions',color:'#c1704f'},
@@ -279,10 +288,10 @@ const LOCS=RAW.map(([name,x,y],i)=>{
 });
 const N=LOCS.length;
 const missing=BLD.filter(b=>!LOCS.some(l=>l.bids.includes(b.id))&&!['sessions','night'].includes(b.region));
-if(missing.length)console.warn('Buildings not on the map:',missing.map(b=>b.name));
+if(missing.length)console.warn('Locations not on the map:',missing.map(b=>b.name));
 
 const KEY='romanceopoly-2027-v2';
-const DEFAULT={pos:0,laps:0,awaiting:null,entries:{},log:[],rules:{dice:1,skipDone:true,mustFinish:true},showPath:false};
+const DEFAULT={major:null,minor:null,pos:0,laps:0,awaiting:null,entries:{},log:[],rules:{dice:1,skipDone:true,mustFinish:true},showPath:false};
 let S=load();
 function load(){try{const r=JSON.parse(localStorage.getItem(KEY));if(r)return{...DEFAULT,...r,rules:{...DEFAULT.rules,...(r.rules||{})}};}catch(e){}return structuredClone(DEFAULT)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('Could not save — browser storage may be full. Use Export to back up your data.')}}
@@ -300,6 +309,39 @@ function locStatus(L){
   if(st.includes('reading'))return 'reading';
   if(st.includes('complete'))return 'partial';
   return 'todo';
+}
+
+/* ---------- degree ---------- */
+const REQ=5,ACAD=['unnatural','applied','ruinous','current','special'];
+const coreOf=r=>BLD.filter(b=>b.region===r&&b.type==='Core');
+const honorsOf=r=>BLD.filter(b=>b.region===r&&b.type==='Honors');
+const doneN=l=>l.filter(b=>status(b.id)==='complete').length;
+function degree(){
+  const gs=Math.min(REQ,doneN(coreOf('general')));
+  const mj=S.major?Math.min(REQ,doneN(coreOf(S.major))):0;
+  const mn=S.minor?Math.min(REQ,doneN(coreOf(S.minor))):0;
+  const el=(S.major&&S.minor)?Math.min(REQ,ACAD.filter(r=>r!==S.major&&r!==S.minor).reduce((n,r)=>n+doneN(coreOf(r)),0)):0;
+  const total=gs+mj+mn+el,grad=total===REQ*4;
+  const honors=grad&&[S.major,S.minor].every(r=>honorsOf(r).every(b=>status(b.id)==='complete'));
+  return{gs,mj,mn,el,total,grad,honors};
+}
+// Which departments the dice may land on (hard limit): General Studies, then major/minor, then electives.
+function activeRegions(kind){
+  const d=degree();
+  if(kind==='Honors')return['general',S.major,S.minor].filter(Boolean);
+  if(d.gs<REQ)return['general'];
+  const mm=[[S.major,d.mj],[S.minor,d.mn]].filter(([r,c])=>r&&c<REQ).map(x=>x[0]);
+  if(mm.length)return mm;
+  if(S.major&&S.minor&&d.el<REQ)return ACAD.filter(r=>r!==S.major&&r!==S.minor);
+  return[];
+}
+function rollHint(kind){
+  const d=degree();
+  if(canRoll(kind))return'';
+  if(kind==='Honors')return'No open Honors locations left to roll for.';
+  if(d.grad)return'You\'ve met every graduation requirement!';
+  if(d.gs>=REQ&&(!S.major||!S.minor)&&!(S.major&&S.minor))return'Declare your major and minor to keep rolling.';
+  return'';
 }
 
 /* ---------- board ---------- */
@@ -341,28 +383,42 @@ function render(){
         ce=BLD.filter(b=>b.region==='clubs'||b.region==='events'),
         bonus=BLD.filter(b=>b.region==='sessions'||b.region==='night');
   const coreDone=core.filter(isDone).length,honDone=hon.filter(isDone).length,ceDone=ce.filter(isDone).length,bonusDone=bonus.filter(isDone).length;
-  $('totbar').style.width=(coreDone/core.length*100)+'%';
-  $('totlabel').innerHTML=`<b>Core (required): ${coreDone}/${core.length}</b><br>★ Honors (extra credit): ${honDone}/${hon.length}<br>Clubs &amp; Events: ${ceDone}/${ce.length}<br>Bonus (Study Sessions &amp; Night School): ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
-  $('headprog').textContent=`Core ${coreDone}/${core.length} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Bonus ${bonusDone}/${bonus.length}`;
+  const dg=degree();
+  $('totbar').style.width=(dg.total/(REQ*4)*100)+'%';
+  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b><br>★ Honors (all locations): ${honDone}/${hon.length}<br>Extra credit — Clubs &amp; Events: ${ceDone}/${ce.length}<br>Extra credit — Study Sessions &amp; Night School: ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
+  $('headprog').textContent=`Degree ${dg.total}/${REQ*4} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Bonus ${bonusDone}/${bonus.length}`;
+  renderDegree(dg);
   $('regions').innerHTML=Object.entries(REGIONS).map(([k,r])=>{
     const all=BLD.filter(b=>b.region===k),c=all.filter(b=>b.type==='Core'),h=all.filter(b=>b.type==='Honors');
     const acad=c.length>0;                       // academic regions have Core + Honors
     const main=acad?c:all,d=main.filter(isDone).length,hd=h.filter(isDone).length;
     const badge=d===main.length?(acad&&h.length&&hd===h.length?' 🏅★':' 🏅'):'';
-    return `<div class="reg"><span class="sw" style="background:${r.color}"></span><span>${r.label}${badge}</span><span class="small">${d}/${main.length}${acad?' · ★'+hd+'/'+h.length:''}</span><div class="bar"><i style="width:${d/main.length*100}%;background:${r.color}"></i></div></div>`;
+    return `<div class="reg"><span class="sw" style="background:${r.color}"></span><span>${r.label}${r.def?` <i class="tipd r" tabindex="0" data-tip="${esc(r.def)}">ⓘ</i>`:''}${badge}</span><span class="small">${d}/${main.length}${acad?' · ★'+hd+'/'+h.length:''}</span><div class="bar"><i style="width:${d/main.length*100}%;background:${r.color}"></i></div></div>`;
   }).join('');
   $('log').innerHTML=S.log.slice(0,12).map(l=>`<li><b>${l.d.slice(5)}</b> ${esc(l.t)}</li>`).join('')||'<li>Nothing yet — roll the dice!</li>';
   const cur=LOCS[S.pos],boardDone=LOCS.every(l=>l.kind==='start'||locStatus(l)==='complete');
-  $('here').innerHTML=`Your token is on <b>${esc(cur.name)}</b>`+(S.awaiting!=null?` — <b>finish or pass</b> this space before rolling.`:'.');
+  $('here').innerHTML=`Your token is on <b>${esc(cur.name)}</b>`+(S.awaiting!=null?` — <b>finish or pass</b> this space before rolling.`:'.')+(S.awaiting==null?(()=>{const h=rollHint('Core')||'';return h?'<br><span class="small">'+esc(h)+'</span>':''})():'');
   const blocked=moving||(S.rules.mustFinish&&S.awaiting!=null);
   $('btnRoll').disabled=blocked||!canRoll('Core');
   $('btnRollH').disabled=blocked||!canRoll('Honors');
   $('btnPass').disabled=S.awaiting==null;
-  $('banner').classList.toggle('show',coreDone===core.length);
+  $('banner').innerHTML=dg.honors?'🎓★ You graduated with HONORS from Romanceopoly 2027! ★🎓':'🎓 You\'ve met every degree requirement — you\'ve graduated Romanceopoly 2027! Complete all Honors in your major and minor to graduate with honors. 🎓';
+  $('banner').classList.toggle('show',dg.grad);
   $('showPath').checked=S.showPath;$('pathsvg').style.display=S.showPath?'block':'none';
   renderDice(lastRoll);
   renderExtras();
 }
+function renderDegree(dg){
+  const opts=(other,cur)=>'<option value="">— Declare —</option>'+ACAD.map(r=>`<option value="${r}" ${r===cur?'selected':''} ${r===other?'disabled':''}>${REGIONS[r].label}</option>`).join('');
+  $('selMajor').innerHTML=opts(S.minor,S.major);$('selMinor').innerHTML=opts(S.major,S.minor);
+  const row=(label,n,color,note)=>`<div class="reg"><span class="sw" style="background:${color}"></span><span>${label}${note?` <span class="small">${esc(note)}</span>`:''}</span><span class="small">${n}/${REQ}</span><div class="bar"><i style="width:${n/REQ*100}%;background:${color}"></i></div></div>`;
+  $('degrows').innerHTML=row('General Studies',dg.gs,REGIONS.general.color)
+    +row('Major',dg.mj,S.major?REGIONS[S.major].color:'#ccc',S.major?REGIONS[S.major].label:'not declared')
+    +row('Minor',dg.mn,S.minor?REGIONS[S.minor].color:'#ccc',S.minor?REGIONS[S.minor].label:'not declared')
+    +row('Electives',dg.el,'#6b4a8a',S.major&&S.minor?'any other department':'declare major &amp; minor first');
+}
+$('selMajor').onchange=e=>{S.major=e.target.value||null;if(S.minor===S.major)S.minor=null;addLog(S.major?'Declared major: '+REGIONS[S.major].label:'Cleared major');save();render()};
+$('selMinor').onchange=e=>{S.minor=e.target.value||null;if(S.minor===S.major)S.major=null;addLog(S.minor?'Declared minor: '+REGIONS[S.minor].label:'Cleared minor');save();render()};
 function renderExtras(){
   const mk=(region,label)=>BLD.filter(b=>b.region===region).map(b=>{
     const e=S.entries[b.id],st=status(b.id);
@@ -377,8 +433,8 @@ let moving=false,lastRoll=[1],lastKind='Core';
 function renderDice(vals){$('dicebox').innerHTML=vals.map(v=>`<div class="die ${lastKind==='Honors'?'honors':''}">${v}</div>`).join('')}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 // A Core roll only counts Core buildings as it moves; an Honors roll only counts Honors buildings.
-const isKind=(L,k)=>L.kind==='single'&&B[L.bids[0]].type===k;
-const canRoll=k=>LOCS.some(l=>isKind(l,k)&&locStatus(l)!=='complete');
+const isKind=(L,k,reg)=>L.kind==='single'&&B[L.bids[0]].type===k&&reg.includes(L.region);
+const canRoll=k=>{const reg=activeRegions(k);return LOCS.some(l=>isKind(l,k,reg)&&locStatus(l)!=='complete')};
 async function doRoll(kind){
   if(moving||!canRoll(kind))return;moving=true;lastKind=kind;
   $('btnRoll').disabled=$('btnRollH').disabled=true;
@@ -387,13 +443,13 @@ async function doRoll(kind){
   const total=1+Math.floor(Math.random()*6);lastRoll=[total];
   renderDice(lastRoll);
   await sleep(350);
-  let i=S.pos,steps=total,lapped=false;
+  let i=S.pos,steps=total,lapped=false;const reg=activeRegions(kind);
   while(steps>0){
     i=(i+1)%N;
     if(i===0){S.laps++;lapped=true}
     placeToken(i,true);S.pos=i;
     await sleep(240);
-    if(isKind(LOCS[i],kind)&&(!S.rules.skipDone||locStatus(LOCS[i])!=='complete'))steps--;
+    if(isKind(LOCS[i],kind,reg)&&(!S.rules.skipDone||locStatus(LOCS[i])!=='complete'))steps--;
   }
   const L=LOCS[i];
   S.awaiting=locStatus(L)==='complete'?null:i;
@@ -425,7 +481,7 @@ function showModal(){fillModal();$('ov').classList.add('open')}
 function fillModal(){
   const b=B[curB],e=entry(curB),r=REGIONS[b.region];
   const tl=b.type==='Honors'?'★ Honors · extra credit':b.type==='Core'?'Core · required':b.type;
-  $('mchips').innerHTML=`<span class="chip" style="background:${r.color}">${esc(r.label)}</span><span class="chip type" style="color:${b.type==='Honors'?'#b8860b':r.color}">${esc(tl)}</span>`;
+  $('mchips').innerHTML=`<span class="chip" style="background:${r.color}">${esc(r.label)}${r.def?` <i class="tipd" tabindex="0" data-tip="${esc(r.def)}">ⓘ</i>`:''}</span><span class="chip type" style="color:${b.type==='Honors'?'#b8860b':r.color}">${esc(tl)}</span>`;
   $('mname').textContent=b.name;
   $('msub').textContent=curLoc.kind==='group'?`Pick one of the ${curLoc.bids.length} prompts at ${curLoc.name}`:(b.where!==r.label?b.where:'');
   $('tabs').style.display=curLoc.bids.length>1?'flex':'none';
@@ -495,17 +551,26 @@ $('m2close').onclick=()=>$('ov2').classList.remove('open');
 $('ov2').addEventListener('mousedown',e=>{if(e.target===$('ov2'))$('ov2').classList.remove('open')});
 $('btnRules').onclick=()=>{
   openM2('How to play (draft rules)',`
+  <p>Romanceopoly is a university degree. You graduate after <b>20 books</b>:</p>
   <ol>
-   <li><b>Start</b> on <i>Start Here</i>. The map has ${N-1} stops: 48 academic buildings (Core &amp; Honors) plus 8 Clubs and Events that each hold 4 prompts.</li>
-   <li><b>One die, two rolls.</b> The <b>Core die</b> moves your token clockwise to a <b>Core</b> building: the die counts only open Core buildings along the path, hopping over everything else. The <b>★ Honors die</b> does the same for <b>Honors</b> buildings (extra credit). Turn on “Show path” to see the route.</li>
-   <li><b>Land</b> on a building and read a book that fits its prompt. Prioritize Core; roll the Honors die when you want extra credit.</li>
-   <li><b>Clubs &amp; Events</b> aren’t reached by either die yet. Click them any time to read.</li>
-   <li>Mark it <i>Reading</i> when you begin; <i>Complete</i> auto-stamps today’s date. Add a rating and the pin turns green (or shows your cover).</li>
-   <li><b>Finish before you roll again</b> — or mark the book DNF, or pass the space.</li>
-   <li><b>Lap bonus:</b> each time you pass Start Here, pick any open building for a free read.</li>
-   <li><b>Bonus:</b> Study Sessions (12 monthly assigned reads) and Night School (8 reads) live below the map. They count toward your bonus progress, but they aren’t on the board and never come up on the dice.</li>
-   <li><b>Core</b> buildings are required to graduate. <b>Honors</b> buildings (gold-ringed pins) are extra credit, like making the honor roll.</li>
-   <li>Complete all Core buildings in a region for its 🏅; add every Honors one too for 🏅★. You can always click any building to read ahead.</li>
+   <li><b>General Studies:</b> read all 5 Core General Studies prompts.</li>
+   <li><b>Major:</b> declare a department (genre) and read its 5 Core prompts.</li>
+   <li><b>Minor:</b> declare a second department and read its 5 Core prompts.</li>
+   <li><b>Electives:</b> read any 5 Core prompts from the 3 departments you didn’t choose.</li>
+  </ol>
+  <p>You can declare or change your major and minor at any time (progress is kept). One book counts toward one requirement. Hover the ⓘ next to a department to see what it covers.</p>
+  <h3>Rolling</h3>
+  <ol>
+   <li><b>Start</b> on <i>Start Here</i>. The <b>Core die</b> moves clockwise and counts only open Core locations, in order: <b>General Studies</b> first, then your <b>major and minor</b>, then <b>electives</b>. Turn on “Show path” to see the route.</li>
+   <li><b>Land</b> on a location and read a book that fits its prompt. Mark it <i>Reading</i> when you start; <i>Complete</i> stamps today’s date.</li>
+   <li><b>Finish before you roll again</b>, or mark the book DNF, or pass the space.</li>
+   <li><b>Lap bonus:</b> each time you pass Start Here, pick any open location for a free read.</li>
+   <li>You can always click any location to read ahead or log a book.</li>
+  </ol>
+  <h3>Honors &amp; extra credit</h3>
+  <ol>
+   <li><b>Honors</b> (gold-ringed pins): complete every Honors location in your major and minor to graduate <b>with honors</b>. The <b>★ Honors die</b> moves you through Honors locations in General Studies, your major and your minor. General Studies Honors don’t count toward honors graduation.</li>
+   <li><b>Clubs, Events, Study Sessions and Night School</b> are extra credit only. They’re not on the dice yet.</li>
   </ol>
   <h3>Tweak the draft</h3>
   <div class="opt"><label><input type="checkbox" id="rSkip"> Completed buildings don’t count when moving</label></div>
