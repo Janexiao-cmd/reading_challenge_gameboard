@@ -29,7 +29,8 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;padding:16p
 .boardwrap{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
 .boardtools{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
 .boardtools label{display:flex;gap:4px;align-items:center}
-.scroller{overflow:auto;max-height:calc(100vh - 230px)}
+.scroller{overflow:auto}
+.scroller.zoomed{max-height:calc(100vh - 230px)}
 .board{position:relative;width:100%;line-height:0}
 .board img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none}
 .board svg.path{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -699,7 +700,7 @@ const syncHead=()=>document.documentElement.style.setProperty('--hh',document.qu
 addEventListener('resize',syncHead);syncHead();
 
 /* ---------- toolbar ---------- */
-$('zoom').oninput=e=>{board.style.width=e.target.value+'%'};
+$('zoom').oninput=e=>{board.style.width=e.target.value+'%';$('scroller').classList.toggle('zoomed',+e.target.value>100)};
 $('showPath').onchange=e=>{S.showPath=e.target.checked;save();render()};
 $('toastX').onclick=()=>$('toast').classList.remove('show');
 $('toastExport').onclick=()=>$('btnExport').click();

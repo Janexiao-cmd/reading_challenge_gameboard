@@ -2,7 +2,7 @@
 
 > Living document. Update it whenever requirements, rules, or decisions change, and add a line to the Changelog at the bottom.
 
-**Owner:** Jane · **Status:** Draft v0.25 · **Last updated:** 2026-11-24
+**Owner:** Jane · **Status:** Draft v0.26 · **Last updated:** 2026-11-24
 
 ---
 
@@ -138,7 +138,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 
 - **Intro:** a collapsible "How it works" bar sits under the roll bar (design option B). It is open on a first visit, and remembers if the player collapses it. Full text: "Choose your own 2027 romance reading challenge with Romanceopoly! Every building on this map is a reading prompt, and you get to build your own class schedule for the year. Roll the dice or pick your prompts one by one, then finish 20 prompts and graduate with the Class of 2027."
 - **Roll bar:** a compact bar sits at the top of the page, under the header and above the intro (and stays in view while scrolling). It holds the dice, Roll Core die, Roll Honors die, a one-line "token on …" status, and Open location and Pass space.
-- **Main view:** the game board on the left. The sidebar on the right has one card, **Progress**.
+- **Main view:** the game board on the left, shown in full (not cropped) at 100% zoom. It only scrolls inside its card when zoomed in. The sidebar on the right has one card, **Progress**.
 - **Journey log** lives in a drawer that slides in from the right. A "📜 Journey log" button in the header opens it. It shows all saved entries (up to 60).
 - **Progress** shows only what applies to the player: total out of 20, then General Studies, Major, Minor and Electives; Honors for the major and minor (plus General Studies Honors as extra); each Club (👑 when President); each Event with its season. A **🎓 Elect my degree** button and a **📚 Study Sessions x/12** button sit on this card.
 - **Elect my degree** opens a modal to choose the major and minor, with Night School in its own section below them.
@@ -253,3 +253,4 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **2026-11-24:** Removed "spin the wheel" from the intro text (v0.23).
 - **2026-11-24:** Compact roll bar at the top, Journey log in a drawer, intro design options in `design-options/` (v0.24).
 - **2026-11-24:** Intro switched to collapsible design option B (v0.25).
+- **2026-11-24:** Board is no longer cropped at 100% zoom (v0.26).
