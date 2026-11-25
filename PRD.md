@@ -2,13 +2,15 @@
 
 > Living document. Update it whenever requirements, rules, or decisions change, and add a line to the Changelog at the bottom.
 
-**Owner:** Jane · **Status:** Draft v0.27 · **Last updated:** 2026-11-24
+**Owner:** Jane · **Status:** Draft v0.29 · **Last updated:** 2026-11-24
 
 ---
 
 ## 1. Overview
 
 Romanceopoly 2027 is a personal, single-player reading challenge for romance novels, played on a Monopoly-style campus board. Each "building" on the board is a reading prompt. The reader rolls a die, moves a token around the board, reads a book that fits the prompt, and logs it. Progress is tracked by region, by tier (Core vs. Honors), and by bonus categories.
+
+**Credit:** the Romanceopoly challenge, its prompts and its rules were created by **Francesca** of **Under the Covers**. Her original directions are at https://www.underthecoversbookblog.com/reading-challenge/. The app itself was built by **Jane (@scribblerjane)**. Both credits appear in the footer of every page.
 
 ## 2. Goals
 
@@ -271,3 +273,5 @@ Awards show as chips on the Progress card: gold when earned, grey when not. Hove
 - **2026-11-24:** Intro switched to collapsible design option B (v0.25).
 - **2026-11-24:** Board is no longer cropped at 100% zoom (v0.26).
 - **2026-11-24:** Added awards, with Honors Graduate redefined as all 3 Honors in any department (v0.27).
+- **2026-11-24:** Added a creator credit and link to Francesca's challenge in the footer (v0.28).
+- **2026-11-24:** Footer names Francesca's blog, Under the Covers, and credits Jane (@scribblerjane) for the build (v0.29).
