@@ -166,6 +166,10 @@ header{position:sticky;top:0;z-index:20}
 .intro summary .chev{color:var(--muted);transition:.2s}
 .intro details[open] summary .chev{transform:rotate(180deg)}
 .intro .body{border-top:1px dashed var(--line);padding:12px 0 14px;line-height:1.55;max-width:900px}
+.awards{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px}
+.award{font-size:12px;font-weight:700;border-radius:99px;padding:2px 9px;border:1px dashed var(--line);color:var(--muted);background:#fff;cursor:help;filter:grayscale(1);opacity:.7}
+.award.on{border:1px solid var(--gold);color:#6b4a08;background:#fff3cf;filter:none;opacity:1}
+.award.na{opacity:.45}
 </style>
 </head>
 <body>
@@ -221,6 +225,7 @@ header{position:sticky;top:0;z-index:20}
       <h3>Progress <small id="lapLabel"></small></h3>
       <div class="bar"><i id="totbar"></i></div>
       <div class="small" id="totlabel" style="margin:4px 0 8px"></div>
+      <div id="awards" class="awards"></div>
       <button class="btn primary" id="btnDegree" style="width:100%">🎓 Elect my degree</button>
       <div id="progbody"></div>
       <button class="btn" id="btnSessions" style="width:100%;margin-top:10px"></button>
@@ -386,8 +391,22 @@ function degree(){
   const mn=S.minor?Math.min(REQ,doneN(coreOf(S.minor))):0;
   const el=(S.major&&S.minor)?Math.min(REQ,ACAD.filter(r=>r!==S.major&&r!==S.minor).reduce((n,r)=>n+doneN(coreOf(r)),0)):0;
   const total=gs+mj+mn+el,grad=total===REQ*4;
-  const honors=grad&&[S.major,S.minor].every(r=>honorsOf(r).every(b=>status(b.id)==='complete'));
+  const honors=['general',...ACAD].some(r=>{const h=honorsOf(r);return h.length>0&&h.every(b=>status(b.id)==='complete')});
   return{gs,mj,mn,el,total,grad,honors};
+}
+/* ---------- awards ---------- */
+const allDone=n=>{const c=BLD.filter(b=>b.where===n);return c.length>0&&c.every(b=>status(b.id)==='complete')};
+function awards(dg){
+  const pres=Object.keys(CLUBS).filter(isPresident),varsity=Object.keys(EVENTS).every(allDone);
+  const summa=dg.grad&&dg.honors&&pres.length>0&&varsity;
+  return[
+    {i:'🎓',n:'Graduate',on:dg.grad,t:'Finish your 20 prompts.'},
+    {i:'★',n:'Honors Graduate',on:dg.honors,t:'Finish all 3 Honors prompts in any department.'},
+    {i:'👑',n:'Club President'+(pres.length>1?' ×'+pres.length:''),on:pres.length>0,t:'Finish all 4 prompts in a club. You get one for every club you finish.'},
+    {i:'🏆',n:'Varsity',on:varsity,t:'Finish all 4 prompts in all four seasonal events.'},
+    {i:'🏅',n:'Match Week Champion',on:false,off:true,t:'Log at least one entry during a match week your team wins. (Match weeks aren’t tracked yet.)'},
+    {i:'💎',n:'Summa Cum Laude',on:summa,t:'Earn Graduate, Honors Graduate, Club President and Varsity in the same year.'}
+  ];
 }
 // Which departments the dice may land on (hard limit): General Studies, then major/minor, then electives.
 function activeRegions(kind){
@@ -451,7 +470,8 @@ function render(){
   $('btnRoll').disabled=blocked||!canRoll('Core');
   $('btnRollH').disabled=blocked||!canRoll('Honors');
   $('btnPass').disabled=S.awaiting==null;
-  $('banner').innerHTML=dg.honors?'🎓★ You graduated with HONORS from Romanceopoly 2027! ★🎓':'🎓 You\'ve met every degree requirement — you\'ve graduated Romanceopoly 2027! Complete all Honors in your major and minor to graduate with honors. 🎓';
+  const aw=awards(dg),summa=aw[5].on;
+  $('banner').innerHTML=summa?'🎓💎 Summa Cum Laude! You earned Graduate, Honors Graduate, Club President and Varsity. 💎🎓':dg.honors?'🎓★ You graduated with HONORS from Romanceopoly 2027! ★🎓':'🎓 You\'ve finished your 20 prompts — you\'ve graduated Romanceopoly 2027! Finish all 3 Honors prompts in any department to also earn Honors Graduate. 🎓';
   $('banner').classList.toggle('show',dg.grad);
   $('showPath').checked=S.showPath;$('pathsvg').style.display=S.showPath?'block':'none';
   renderDice(lastRoll);
@@ -464,16 +484,18 @@ function renderProgress(dg){
   $('lapLabel').textContent='Lap '+(S.laps+1);
   $('headprog').textContent=`Degree ${dg.total}/${REQ*4}`;
   $('totbar').style.width=(dg.total/(REQ*4)*100)+'%';
-  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b>`+(dg.grad?(dg.honors?' · 🎓★ Honors graduate':' · 🎓 Graduated'):'');
+  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b>`+(dg.grad?' · 🎓 Graduated':'');
+  $('awards').innerHTML=awards(dg).map(a=>`<span class="award ${a.on?'on':''}${a.off?' na':''}" title="${esc(a.t)}">${a.i} ${esc(a.n)}</span>`).join('');
   let h=psec('Degree')
     +prow('General Studies',dg.gs,REQ,REGIONS.general.color)
     +prow('Major',dg.mj,REQ,S.major?REGIONS[S.major].color:'#ccc',S.major?deptName(S.major)+(isDark(S.major)?' · team: '+REGIONS[S.major].label:''):'not declared')
     +prow('Minor',dg.mn,REQ,S.minor?REGIONS[S.minor].color:'#ccc',S.minor?deptName(S.minor):'not declared')
     +prow('Electives',dg.el,REQ,'#6b4a8a',S.major&&S.minor?'any other department':'declare major &amp; minor first');
-  const hon=[S.major,S.minor].filter(Boolean).flatMap(honorsOf),gsh=honorsOf('general');
-  h+=psec('★ Honors');
-  h+=hon.length?prow('Major &amp; minor',doneN(hon),hon.length,'#b8860b','for honors graduation'):'<div class="small">Declare a major and minor to track honors.</div>';
-  h+=prow('General Studies',doneN(gsh),gsh.length,'#b8860b','extra');
+  h+=psec('★ Honors <span style="text-transform:none;letter-spacing:0;font-weight:600">· all 3 in any department</span>');
+  const hrow=(r,label)=>{const x=honorsOf(r);return prow(label,doneN(x),x.length,'#b8860b')};
+  h+=hrow('general','General Studies');
+  h+=S.major?hrow(S.major,'Major: '+REGIONS[S.major].label):'';
+  h+=S.minor?hrow(S.minor,'Minor: '+REGIONS[S.minor].label):'';
   h+=psec('Clubs')+Object.keys(CLUBS).map(n=>{const c=BLD.filter(b=>b.where===n);return prow(CLUBS[n].icon+' '+n+(isPresident(n)?' 👑':''),doneN(c),c.length,REGIONS.clubs.color)}).join('');
   h+=psec('Events')+Object.keys(EVENTS).map(n=>{const ev=EVENTS[n],c=BLD.filter(b=>b.where===n);return prow(ev.icon+' '+n,doneN(c),c.length,REGIONS.events.color,inSeason(ev)?ev.season:ev.season+' · opens '+ev.range)}).join('');
   $('progbody').innerHTML=h;
@@ -675,9 +697,17 @@ $('btnRules').onclick=()=>{
   </ol>
   <h3>Honors &amp; extra credit</h3>
   <ol>
-   <li><b>Honors</b> (gold-ringed pins): complete every Honors location in your major and minor to graduate <b>with honors</b>. The <b>★ Honors die</b> moves you through Honors locations in General Studies, your major and your minor. General Studies Honors don’t count toward honors graduation.</li>
+   <li><b>Honors</b> (gold-ringed pins): the <b>★ Honors die</b> moves you through Honors locations in General Studies, your major and your minor. Finish all 3 Honors prompts in any department to earn <b>Honors Graduate</b>.</li>
    <li><b>Events</b> are seasonal extra credit: Winter (Jan–Mar) Polar Plunge, Spring (Apr–Jun) Picnic Games, Summer (Jul–Sep) Summer Regatta, Fall (Oct–Dec) Rivalry Week. Click one any time to add book info, but you can only start reading during its season.</li>
    <li><b>Clubs</b> (Grave Diggers, Stargazers, Tea Society, Zine Club) are extra credit. Each has 4 prompts: finish all 4 to become <b>Club President</b> 👑.</li>
+   <li><b>Awards</b> (shown on the Progress card):<ul>
+     <li><b>Graduate:</b> finish your 20 prompts.</li>
+     <li><b>Honors Graduate:</b> finish all 3 Honors prompts in any department.</li>
+     <li><b>Club President:</b> finish all 4 prompts in a club. You get one for every club you finish.</li>
+     <li><b>Varsity:</b> finish all 4 prompts in all four seasonal events.</li>
+     <li><b>Match Week Champion:</b> log at least one entry during a match week your team wins.</li>
+     <li><b>Summa Cum Laude:</b> earn Graduate, Honors Graduate, Club President and Varsity in the same year.</li>
+   </ul></li>
    <li><b>Study Sessions</b> are extra credit only. They’re not on the dice yet.</li>
    <li><b>Night School 🌙:</b> missing a dark romance department? After hours, any department except General Studies can go dark. Tick it under Night School in “Elect my degree” to swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If it’s your major, use the name of the map area as your team. You can turn it on or off at any time.</li>
   </ol>

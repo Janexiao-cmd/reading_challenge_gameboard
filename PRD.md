@@ -2,7 +2,7 @@
 
 > Living document. Update it whenever requirements, rules, or decisions change, and add a line to the Changelog at the bottom.
 
-**Owner:** Jane · **Status:** Draft v0.26 · **Last updated:** 2026-11-24
+**Owner:** Jane · **Status:** Draft v0.27 · **Last updated:** 2026-11-24
 
 ---
 
@@ -104,6 +104,19 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - It can be turned on or off at any time under Night School in the "Elect my degree" modal. Dark locations show a 🌙 Night School chip.
 - If a dark department is the major, the Progress card shows the department name as the player's team.
 
+### Awards
+
+| Award | How it's earned | Status |
+|---|---|---|
+| 🎓 **Graduate** | Finish your 20 prompts | Built |
+| ★ **Honors Graduate** | Finish all 3 Honors prompts in any department (General Studies counts) | Built |
+| 👑 **Club President** | Finish all 4 prompts in a club. One for every club you finish | Built |
+| 🏆 **Varsity** | Finish all 4 prompts in all four seasonal events (16 prompts) | Built |
+| 🏅 **Match Week Champion** | Log at least one entry during a match week your team wins | Not built: rules for match weeks, teams and winning are undefined |
+| 💎 **Summa Cum Laude** | Earn Graduate, Honors Graduate, Club President and Varsity in the same year | Built (at least one Club President counts) |
+
+Awards show as chips on the Progress card: gold when earned, grey when not. Hover a chip for how to earn it. The graduation banner changes for Honors Graduate and Summa Cum Laude. Awards are independent of each other (Honors Graduate doesn't require Graduate), except Summa Cum Laude.
+
 ### Terminology
 
 - **Location** replaces "building" in all user-facing text, and eventually in code. (The code and `data.js` still say "building" for now.)
@@ -140,7 +153,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **Roll bar:** a compact bar sits at the top of the page, under the header and above the intro (and stays in view while scrolling). It holds the dice, Roll Core die, Roll Honors die, a one-line "token on …" status, and Open location and Pass space.
 - **Main view:** the game board on the left, shown in full (not cropped) at 100% zoom. It only scrolls inside its card when zoomed in. The sidebar on the right has one card, **Progress**.
 - **Journey log** lives in a drawer that slides in from the right. A "📜 Journey log" button in the header opens it. It shows all saved entries (up to 60).
-- **Progress** shows only what applies to the player: total out of 20, then General Studies, Major, Minor and Electives; Honors for the major and minor (plus General Studies Honors as extra); each Club (👑 when President); each Event with its season. A **🎓 Elect my degree** button and a **📚 Study Sessions x/12** button sit on this card.
+- **Progress** shows only what applies to the player: total out of 20, then General Studies, Major, Minor and Electives; Honors rows for General Studies, the major and the minor; an Awards chip row; each Club (👑 when President); each Event with its season. A **🎓 Elect my degree** button and a **📚 Study Sessions x/12** button sit on this card.
 - **Elect my degree** opens a modal to choose the major and minor, with Night School in its own section below them.
 - **Study Sessions** opens a modal with the 12 monthly sessions. There is no section below the map any more.
 
@@ -170,10 +183,12 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - The player starts in General Studies, then moves to other departments, prioritizing the major and minor first.
 - One book counts toward one requirement only (revisit later).
 - Clubs, Events, Study Sessions and Night School are extra credit only. Details to come from Jane.
-- Honors turns a normal graduation into an **honors graduation**. **Honors graduation requires completing every Honors location in the declared major and minor departments**, on top of the 20 books.
+- Honors turns a normal graduation into an **honors graduation**. Honors graduation is now the **Honors Graduate** award: finish all 3 Honors prompts in any department (see Awards). This replaces the earlier rule (all Honors in major and minor).
 
 **Degree rules (not yet built)**
 
+- [ ] **Match Week Champion:** define a match week (dates? which weeks?), how teams work (is the team your major's map area?), who wins a week, and how an entry is tied to a match week.
+- [ ] Summa Cum Laude says "in the same year". The app only covers 2027, so this isn't checked separately.
 - [ ] Rename "building" to "location" in the code (UI text and the Rules modal are done).
 
 **Other**
@@ -222,6 +237,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 | 2026-11-24 | Sidebar order: Progress, Roll the dice, Journey log; degree election and Study Sessions move into modals | Jane's layout request |
 | 2026-11-24 | Roll the dice becomes a compact top bar; Journey log moves to a drawer | Jane's design request |
 | 2026-11-24 | Intro uses design option B (collapsible "How it works") | Jane's pick |
+| 2026-11-24 | Awards added: Graduate, Honors Graduate (all 3 Honors in any department), Club President, Varsity, Match Week Champion, Summa Cum Laude | Jane's rules |
 | 2026-11-24 | One book counts toward one requirement (for now) | Simplest rule; revisit later |
 | 2026-11-24 | Honors = honors graduation; Clubs, Events, Study Sessions, Night School = extra credit | Jane's rules |
 | 2026-11-24 | Track requirements in `PRD.md` in the repo | Keeps context next to the code and in git history |
@@ -254,3 +270,4 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **2026-11-24:** Compact roll bar at the top, Journey log in a drawer, intro design options in `design-options/` (v0.24).
 - **2026-11-24:** Intro switched to collapsible design option B (v0.25).
 - **2026-11-24:** Board is no longer cropped at 100% zoom (v0.26).
+- **2026-11-24:** Added awards, with Honors Graduate redefined as all 3 Honors in any department (v0.27).
