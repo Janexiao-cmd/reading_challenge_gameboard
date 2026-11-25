@@ -140,6 +140,8 @@ textarea{resize:vertical;min-height:60px}
 .toast.show{display:flex}
 .toast button{border:0;background:#fff;color:var(--ink);border-radius:99px;padding:4px 12px;font-weight:700}
 .toast .x{background:transparent;color:#fff;font-size:20px;padding:0 4px}
+.intro{padding:14px 20px 0}
+.intro p{margin:0;max-width:900px;font-size:16px;line-height:1.5;color:var(--ink);background:var(--card);border:1px solid var(--line);border-left:5px solid var(--rose);border-radius:12px;padding:12px 16px}
 </style>
 </head>
 <body>
@@ -154,6 +156,7 @@ textarea{resize:vertical;min-height:60px}
   <button class="btn" id="btnReset">Reset</button>
   <input type="file" id="importFile" accept="application/json" hidden>
 </header>
+<section class="intro"><p>Choose your own 2027 romance reading challenge with Romanceopoly! Every building on this map is a reading prompt, and you get to build your own class schedule for the year. Roll the dice or pick your prompts one by one, then finish 20 prompts and graduate with the Class of 2027.</p></section>
 <div id="banner" class="banner"></div>
 <main>
   <section class="boardwrap">
@@ -173,6 +176,14 @@ textarea{resize:vertical;min-height:60px}
   </section>
   <aside>
     <div class="card">
+      <h3>Progress <small id="lapLabel"></small></h3>
+      <div class="bar"><i id="totbar"></i></div>
+      <div class="small" id="totlabel" style="margin:4px 0 8px"></div>
+      <button class="btn primary" id="btnDegree" style="width:100%">🎓 Elect my degree</button>
+      <div id="progbody"></div>
+      <button class="btn" id="btnSessions" style="width:100%;margin-top:10px"></button>
+    </div>
+    <div class="card">
       <h3>Roll the dice</h3>
       <div class="dicebox" id="dicebox"></div>
       <button class="btn primary" id="btnRoll" style="width:100%;padding:10px">Roll Core die</button>
@@ -184,27 +195,11 @@ textarea{resize:vertical;min-height:60px}
       </div>
     </div>
     <div class="card">
-      <h3>Degree <small>20 books to graduate</small></h3>
-      <div class="row2"><div><label class="f" style="margin-top:0">Major</label><select id="selMajor"></select></div><div><label class="f" style="margin-top:0">Minor</label><select id="selMinor"></select></div></div>
-      <div id="degrows" style="margin-top:6px"></div>
-      <label class="f">🌙 Night School <small style="text-transform:none;letter-spacing:0">— swap a department's prompts for dark romance</small></label>
-      <div id="darkopts" class="small"></div>
-    </div>
-    <div class="card">
-      <h3>Progress</h3>
-      <div class="bar"><i id="totbar"></i></div>
-      <div class="small" id="totlabel" style="margin:4px 0 8px"></div>
-      <div id="regions"></div>
-    </div>
-    <div class="card">
       <h3>Journey log</h3>
       <ul class="log" id="log"></ul>
     </div>
   </aside>
 </main>
-<section class="extras">
-  <div class="card"><h3>Bonus: Study Sessions <small>one assigned read per month · not on the board</small></h3><div class="grid" id="gridSessions"></div></div>
-</section>
 
 <!-- Building modal -->
 <div class="overlay" id="ov"><div class="modal" id="modal" role="dialog" aria-modal="true">
@@ -413,23 +408,8 @@ function render(){
     p.lastChild.innerHTML=tip;
   });
   placeToken(S.pos);
-  const isDone=b=>status(b.id)==='complete';
-  const core=BLD.filter(b=>b.type==='Core'),hon=BLD.filter(b=>b.type==='Honors'),
-        ce=BLD.filter(b=>b.region==='clubs'||b.region==='events'),
-        bonus=BLD.filter(b=>b.region==='sessions');
-  const coreDone=core.filter(isDone).length,honDone=hon.filter(isDone).length,ceDone=ce.filter(isDone).length,bonusDone=bonus.filter(isDone).length;
   const dg=degree();
-  $('totbar').style.width=(dg.total/(REQ*4)*100)+'%';
-  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b><br>★ Honors (all locations): ${honDone}/${hon.length}<br>Extra credit — Clubs &amp; Events: ${ceDone}/${ce.length}<br>👑 Club Presidents: ${Object.keys(CLUBS).filter(isPresident).length}/${Object.keys(CLUBS).length}<br>Extra credit — Study Sessions: ${bonusDone}/${bonus.length}<br>Lap ${S.laps+1}`;
-  $('headprog').textContent=`Degree ${dg.total}/${REQ*4} · Honors ${honDone}/${hon.length} · Clubs & Events ${ceDone}/${ce.length} · Study Sessions ${bonusDone}/${bonus.length}`;
-  renderDegree(dg);updUndo();
-  $('regions').innerHTML=Object.entries(REGIONS).map(([k,r])=>{
-    const all=BLD.filter(b=>b.region===k),c=all.filter(b=>b.type==='Core'),h=all.filter(b=>b.type==='Honors');
-    const acad=c.length>0;                       // academic regions have Core + Honors
-    const main=acad?c:all,d=main.filter(isDone).length,hd=h.filter(isDone).length;
-    const badge=d===main.length?(acad&&h.length&&hd===h.length?' 🏅★':' 🏅'):'';
-    return `<div class="reg"><span class="sw" style="background:${r.color}"></span><span>${r.label}${r.def?` <i class="tipd r" tabindex="0" data-tip="${esc(r.def)}">ⓘ</i>`:''}${badge}</span><span class="small">${d}/${main.length}${acad?' · ★'+hd+'/'+h.length:''}</span><div class="bar"><i style="width:${d/main.length*100}%;background:${r.color}"></i></div></div>`;
-  }).join('');
+  renderProgress(dg);updUndo();
   $('log').innerHTML=S.log.slice(0,12).map(l=>`<li><b>${l.d.slice(5)}</b> ${esc(l.t)}</li>`).join('')||'<li>Nothing yet — roll the dice!</li>';
   const cur=LOCS[S.pos],boardDone=LOCS.every(l=>l.kind==='start'||locStatus(l)==='complete');
   $('here').innerHTML=`Your token is on <b>${esc(cur.name)}</b>`+(S.awaiting!=null?` — <b>finish or pass</b> this space before rolling.`:'.')+(S.awaiting==null?(()=>{const h=rollHint('Core')||'';return h?'<br><span class="small">'+esc(h)+'</span>':''})():'');
@@ -441,28 +421,66 @@ function render(){
   $('banner').classList.toggle('show',dg.grad);
   $('showPath').checked=S.showPath;$('pathsvg').style.display=S.showPath?'block':'none';
   renderDice(lastRoll);
-  renderExtras();
 }
-function renderDegree(dg){
+/* ---------- progress (only what applies to me) ---------- */
+const deptName=r=>`${REGIONS[r].label}${REGIONS[r].def?` <i class="tipd r" tabindex="0" data-tip="${esc(REGIONS[r].def)}">ⓘ</i>`:''}${isDark(r)?' 🌙':''}`;
+const prow=(label,n,tot,color,note)=>`<div class="reg"><span class="sw" style="background:${color}"></span><span>${label}${note?` <span class="small">${note}</span>`:''}</span><span class="small">${n}/${tot}</span><div class="bar"><i style="width:${tot?n/tot*100:0}%;background:${color}"></i></div></div>`;
+const psec=t=>`<div class="small" style="font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:12px">${t}</div>`;
+function renderProgress(dg){
+  $('lapLabel').textContent='Lap '+(S.laps+1);
+  $('headprog').textContent=`Degree ${dg.total}/${REQ*4}`;
+  $('totbar').style.width=(dg.total/(REQ*4)*100)+'%';
+  $('totlabel').innerHTML=`<b>Degree: ${dg.total}/${REQ*4} books</b>`+(dg.grad?(dg.honors?' · 🎓★ Honors graduate':' · 🎓 Graduated'):'');
+  let h=psec('Degree')
+    +prow('General Studies',dg.gs,REQ,REGIONS.general.color)
+    +prow('Major',dg.mj,REQ,S.major?REGIONS[S.major].color:'#ccc',S.major?deptName(S.major)+(isDark(S.major)?' · team: '+REGIONS[S.major].label:''):'not declared')
+    +prow('Minor',dg.mn,REQ,S.minor?REGIONS[S.minor].color:'#ccc',S.minor?deptName(S.minor):'not declared')
+    +prow('Electives',dg.el,REQ,'#6b4a8a',S.major&&S.minor?'any other department':'declare major &amp; minor first');
+  const hon=[S.major,S.minor].filter(Boolean).flatMap(honorsOf),gsh=honorsOf('general');
+  h+=psec('★ Honors');
+  h+=hon.length?prow('Major &amp; minor',doneN(hon),hon.length,'#b8860b','for honors graduation'):'<div class="small">Declare a major and minor to track honors.</div>';
+  h+=prow('General Studies',doneN(gsh),gsh.length,'#b8860b','extra');
+  h+=psec('Clubs')+Object.keys(CLUBS).map(n=>{const c=BLD.filter(b=>b.where===n);return prow(CLUBS[n].icon+' '+n+(isPresident(n)?' 👑':''),doneN(c),c.length,REGIONS.clubs.color)}).join('');
+  h+=psec('Events')+Object.keys(EVENTS).map(n=>{const ev=EVENTS[n],c=BLD.filter(b=>b.where===n);return prow(ev.icon+' '+n,doneN(c),c.length,REGIONS.events.color,inSeason(ev)?ev.season:ev.season+' · opens '+ev.range)}).join('');
+  $('progbody').innerHTML=h;
+  const ss=BLD.filter(b=>b.region==='sessions');
+  $('btnSessions').textContent=`📚 Study Sessions ${doneN(ss)}/${ss.length} ›`;
+}
+
+/* ---------- elect my degree (modal) ---------- */
+$('btnDegree').onclick=()=>{
+  openM2('Elect my degree','<div id="degBody"></div>');
+  $('m2body').onchange=e=>{
+    const t=e.target;
+    if(t.id==='selMajor'){S.major=t.value||null;if(S.minor===S.major)S.minor=null;addLog(S.major?'Declared major: '+REGIONS[S.major].label:'Cleared major')}
+    else if(t.id==='selMinor'){S.minor=t.value||null;if(S.minor===S.major)S.major=null;addLog(S.minor?'Declared minor: '+REGIONS[S.minor].label:'Cleared minor')}
+    else if(t.dataset.r){S.dark={...S.dark,[t.dataset.r]:t.checked};addLog(t.checked?'Sent '+REGIONS[t.dataset.r].label+' to Night School 🌙':'Brought '+REGIONS[t.dataset.r].label+' back to day classes')}
+    else return;
+    save();render();fillDegree();
+  };
+  fillDegree();
+};
+function fillDegree(){
   const opts=(other,cur)=>'<option value="">— Declare —</option>'+ACAD.map(r=>`<option value="${r}" ${r===cur?'selected':''} ${r===other?'disabled':''}>${REGIONS[r].label}</option>`).join('');
-  $('selMajor').innerHTML=opts(S.minor,S.major);$('selMinor').innerHTML=opts(S.major,S.minor);
-  const row=(label,n,color,note)=>`<div class="reg"><span class="sw" style="background:${color}"></span><span>${label}${note?` <span class="small">${esc(note)}</span>`:''}</span><span class="small">${n}/${REQ}</span><div class="bar"><i style="width:${n/REQ*100}%;background:${color}"></i></div></div>`;
-  $('darkopts').innerHTML=ACAD.map(r=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:2px 10px 2px 0;white-space:nowrap"><input type="checkbox" data-r="${r}" ${isDark(r)?'checked':''}>${REGIONS[r].label}</label>`).join('');
-  $('degrows').innerHTML=row('General Studies',dg.gs,REGIONS.general.color)
-    +row('Major',dg.mj,S.major?REGIONS[S.major].color:'#ccc',S.major?REGIONS[S.major].label+(isDark(S.major)?' 🌙 team: '+REGIONS[S.major].label:''):'not declared')
-    +row('Minor',dg.mn,S.minor?REGIONS[S.minor].color:'#ccc',S.minor?REGIONS[S.minor].label:'not declared')
-    +row('Electives',dg.el,'#6b4a8a',S.major&&S.minor?'any other department':'declare major &amp; minor first');
+  $('degBody').innerHTML=`
+    <p class="small">You graduate after 20 books: 5 General Studies, 5 in your major, 5 in your minor and 5 electives. Pick two different departments. You can change them at any time and your progress is kept.</p>
+    <div class="row2">
+      <div><label class="f" style="margin-top:0">Major</label><select id="selMajor">${opts(S.minor,S.major)}</select><div class="small" style="margin-top:4px">${S.major?esc(REGIONS[S.major].def):''}</div></div>
+      <div><label class="f" style="margin-top:0">Minor</label><select id="selMinor">${opts(S.major,S.minor)}</select><div class="small" style="margin-top:4px">${S.minor?esc(REGIONS[S.minor].def):''}</div></div>
+    </div>
+    <h3 style="margin-top:20px;border-top:1px solid var(--line);padding-top:14px">🌙 Night School</h3>
+    <p class="small">Missing a dark romance department? After hours, any department except General Studies can go dark. Tick it to swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If it’s your major, use the name of the map area as your team.</p>
+    <div>${ACAD.map(r=>`<label style="display:inline-flex;gap:4px;align-items:center;margin:3px 14px 3px 0;white-space:nowrap"><input type="checkbox" data-r="${r}" ${isDark(r)?'checked':''}>${REGIONS[r].label}</label>`).join('')}</div>`;
 }
-$('darkopts').onchange=e=>{const r=e.target.dataset.r;if(!r)return;S.dark={...S.dark,[r]:e.target.checked};addLog((e.target.checked?'Sent '+REGIONS[r].label+' to Night School 🌙':'Brought '+REGIONS[r].label+' back to day classes'));save();render()};
-$('selMajor').onchange=e=>{S.major=e.target.value||null;if(S.minor===S.major)S.minor=null;addLog(S.major?'Declared major: '+REGIONS[S.major].label:'Cleared major');save();render()};
-$('selMinor').onchange=e=>{S.minor=e.target.value||null;if(S.minor===S.major)S.major=null;addLog(S.minor?'Declared minor: '+REGIONS[S.minor].label:'Cleared minor');save();render()};
-function renderExtras(){
-  const mk=(region,label)=>BLD.filter(b=>b.region===region).map(b=>{
+
+/* ---------- study sessions (modal) ---------- */
+$('btnSessions').onclick=()=>{
+  const cells=BLD.filter(b=>b.region==='sessions').map(b=>{
     const e=S.entries[b.id],st=status(b.id);
-    return `<button class="cell ${st}" data-b="${b.id}"><b>${esc(label(b))}</b><span>${e&&e.title?esc(e.title):b.assigned?esc(b.assigned.title):st==='todo'?'To read':st}</span></button>`}).join('');
-  $('gridSessions').innerHTML=mk('sessions',b=>b.name.replace(' Study Session',''));
-  document.querySelectorAll('.cell').forEach(c=>c.onclick=()=>openBuilding(c.dataset.b));
-}
+    return `<button class="cell ${st}" data-b="${b.id}"><b>${esc(b.name.replace(' Study Session',''))}</b><span>${e&&e.title?esc(e.title):b.assigned?esc(b.assigned.title):st==='todo'?'To read':st}</span></button>`}).join('');
+  openM2('Study Sessions',`<p class="small">One assigned read per month · extra credit · not on the board. Click a month to open it.</p><div class="grid" id="gridSessions">${cells}</div>`);
+  document.querySelectorAll('#gridSessions .cell').forEach(c=>c.onclick=()=>{$('ov2').classList.remove('open');openBuilding(c.dataset.b)});
+};
 
 /* ---------- undo (last roll or status change) ---------- */
 let undoSnap=null;
@@ -600,7 +618,7 @@ $('btnPlace').onclick=()=>{S.pos=curLoc.i;addLog('Moved token to '+curLoc.name);
 $('btnClear').onclick=()=>{if(confirm('Clear everything entered for '+B[curB].name+'?')){delete S.entries[curB];save();fillModal();render()}};
 
 /* ---------- rules ---------- */
-function openM2(title,html){$('m2title').textContent=title;$('m2body').innerHTML=html;$('ov2').classList.add('open')}
+function openM2(title,html){$('m2body').onchange=null;$('m2title').textContent=title;$('m2body').innerHTML=html;$('ov2').classList.add('open')}
 $('m2close').onclick=()=>$('ov2').classList.remove('open');
 $('ov2').addEventListener('mousedown',e=>{if(e.target===$('ov2'))$('ov2').classList.remove('open')});
 $('btnRules').onclick=()=>{
@@ -627,7 +645,7 @@ $('btnRules').onclick=()=>{
    <li><b>Events</b> are seasonal extra credit: Winter (Jan–Mar) Polar Plunge, Spring (Apr–Jun) Picnic Games, Summer (Jul–Sep) Summer Regatta, Fall (Oct–Dec) Rivalry Week. Click one any time to add book info, but you can only start reading during its season.</li>
    <li><b>Clubs</b> (Grave Diggers, Stargazers, Tea Society, Zine Club) are extra credit. Each has 4 prompts: finish all 4 to become <b>Club President</b> 👑.</li>
    <li><b>Study Sessions</b> are extra credit only. They’re not on the dice yet.</li>
-   <li><b>Night School 🌙:</b> missing a dark romance department? After hours, any department except General Studies can go dark. Tick it under Night School in the Degree card to swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If it’s your major, use the name of the map area as your team. You can turn it on or off at any time.</li>
+   <li><b>Night School 🌙:</b> missing a dark romance department? After hours, any department except General Studies can go dark. Tick it under Night School in “Elect my degree” to swap its prompts for the Night School ones. It keeps its map locations, but your classes are at night. If it’s your major, use the name of the map area as your team. You can turn it on or off at any time.</li>
   </ol>
   <h3>Tweak the draft</h3>
   <div class="opt"><label><input type="checkbox" id="rSkip"> Completed buildings don’t count when moving</label></div>

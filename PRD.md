@@ -2,7 +2,7 @@
 
 > Living document. Update it whenever requirements, rules, or decisions change, and add a line to the Changelog at the bottom.
 
-**Owner:** Jane · **Status:** Draft v0.20 · **Last updated:** 2026-11-24
+**Owner:** Jane · **Status:** Draft v0.23 · **Last updated:** 2026-11-24
 
 ---
 
@@ -89,7 +89,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 ### Study Sessions
 
 - 12 monthly sessions (January to December). Each has a prompt and an **assigned book**, defined in `data.js`.
-- Extra credit only. They're not on the board or the dice, and sit in a grid below the map.
+- Extra credit only. They're not on the board or the dice, and open from the Progress card.
 - Opening a session offers a "Use assigned book" button that fills in the title and author. The player can also read a different book.
 - Not season-locked: any session can be started at any time. (Assumption from the existing app; say so if sessions should open only in their month.)
 
@@ -101,8 +101,8 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **Any number** of departments (not General Studies) can go dark, each using the same 8 Night School prompts.
 - Prompts swap in order: a department's Nth Core location gets Night School Core N, and the same for Honors.
 - A dark department keeps its locations, its Core and Honors tiers, and its place in the degree (major, minor or elective). Books already logged stay with their location.
-- It can be turned on or off at any time under Night School in the Degree card. Dark locations show a 🌙 Night School chip.
-- If a dark department is the major, the Degree card shows the department name as the player's team.
+- It can be turned on or off at any time under Night School in the "Elect my degree" modal. Dark locations show a 🌙 Night School chip.
+- If a dark department is the major, the Progress card shows the department name as the player's team.
 
 ### Terminology
 
@@ -134,6 +134,15 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 
 ## 6. Functional requirements
 
+### Layout
+
+- **Intro:** a short explanation of the game sits at the top of the page, under the header: "Choose your own 2027 romance reading challenge with Romanceopoly! Every building on this map is a reading prompt, and you get to build your own class schedule for the year. Roll the dice or pick your prompts one by one, then finish 20 prompts and graduate with the Class of 2027."
+- **Main view:** the game board on the left. The sidebar on the right has three cards, in this order: **Progress**, **Roll the dice**, **Journey log**.
+- **Progress** shows only what applies to the player: total out of 20, then General Studies, Major, Minor and Electives; Honors for the major and minor (plus General Studies Honors as extra); each Club (👑 when President); each Event with its season. A **🎓 Elect my degree** button and a **📚 Study Sessions x/12** button sit on this card.
+- **Elect my degree** opens a modal to choose the major and minor, with Night School in its own section below them.
+- **Study Sessions** opens a modal with the 12 monthly sessions. There is no section below the map any more.
+
+
 ### Implemented
 
 - **Board:** pins with status styling (todo, reading, partial, complete, DNF, honors, group). Hover tooltips. Zoom slider. Optional dotted path overlay. Animated token.
@@ -145,7 +154,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **Backup:** JSON export and import, plus full reset. After every 3 completed books since the last export, a reminder toast offers "Export now".
 - **Rules modal** with the two rule toggles (text predates the degree rules).
 - **Department tooltips:** an ⓘ icon after the department name in the sidebar progress list and the location modal chip. The definition shows on hover over the icon only.
-- **Degree tracker:** Degree card with Major and Minor dropdowns (any time, changeable), progress rows for General Studies, Major, Minor and Electives, and a 20-book total. Graduation and honors banners.
+- **Degree tracker:** "Elect my degree" modal with Major and Minor dropdowns (any time, changeable) and Night School checkboxes. Progress rows for General Studies, Major, Minor and Electives, and a 20-book total. Graduation and honors banners.
 - **Dice hard limit:** Core die lands on General Studies first, then major and minor, then electives. Honors die covers Honors locations in General Studies, the major and the minor.
 - **Dev server:** `npm run dev` serves the static files on port 8000.
 
@@ -208,6 +217,7 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 | 2026-11-24 | Project files live in the repo root (no `romanceopoly-2027/` subfolder) | Lets GitHub Pages serve the repo directly |
 | 2026-11-24 | Prompts, board art and the repo contents may be public | Jane approved |
 | 2026-11-24 | Host on GitHub Pages | Free, and the repo is already on GitHub |
+| 2026-11-24 | Sidebar order: Progress, Roll the dice, Journey log; degree election and Study Sessions move into modals | Jane's layout request |
 | 2026-11-24 | One book counts toward one requirement (for now) | Simplest rule; revisit later |
 | 2026-11-24 | Honors = honors graduation; Clubs, Events, Study Sessions, Night School = extra credit | Jane's rules |
 | 2026-11-24 | Track requirements in `PRD.md` in the repo | Keeps context next to the code and in git history |
@@ -234,3 +244,6 @@ Each Club is a space holding 4 prompts, extra credit only, reached by clicking (
 - **2026-11-24:** Added one-step Undo for rolls and status changes (v0.18).
 - **2026-11-24:** Chose GitHub Pages for hosting (v0.19).
 - **2026-11-24:** Moved all files to the repo root and approved public sharing (v0.20).
+- **2026-11-24:** Reworked the layout: Progress first and personal, "Elect my degree" modal, Study Sessions modal (v0.21).
+- **2026-11-24:** Added the intro text at the top of the page (v0.22).
+- **2026-11-24:** Removed "spin the wheel" from the intro text (v0.23).
